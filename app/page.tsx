@@ -1,65 +1,250 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 
-export default function Home() {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+)
+
+export default async function Home() {
+  const { data: properties, error } = await supabase
+    .from('properties')
+    .select('*')
+    .order('created_at', { ascending: true })
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main
+      style={{
+        minHeight: '100vh',
+        background: '#f6f7fb',
+        padding: '48px 24px 80px',
+        fontFamily: 'Arial, sans-serif',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        
+        {/* HEADER */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <p
+            style={{
+              margin: 0,
+              color: '#7c3aed',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              fontSize: '12px',
+            }}
+          >
+            Rose Legacy Management
+          </p>
+
+          <h1
+            style={{
+              margin: '10px 0 10px',
+              fontSize: '52px',
+              lineHeight: 1.05,
+              color: '#111827',
+              fontWeight: 700,
+            }}
+          >
+            Properties
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p
+            style={{
+              margin: 0,
+              color: '#6b7280',
+              fontSize: '18px',
+            }}
+          >
+            Manage your properties and access maintenance activity in one place.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* ERROR */}
+        {error && (
+          <p
+            style={{
+              color: '#b91c1c',
+              marginBottom: '20px',
+              background: '#fee2e2',
+              border: '1px solid #fecaca',
+              padding: '12px 14px',
+              borderRadius: '12px',
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Error: {error.message}
+          </p>
+        )}
+
+        {/* GRID */}
+        <div
+          style={{
+            display: 'grid',
+            gap: '28px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+          }}
+        >
+          {properties?.map((p) => (
+            <div
+              key={p.id}
+              className="property-card"
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                backgroundColor: '#fff',
+                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+                transition: 'all 0.25s ease',
+              }}
+            >
+              {/* IMAGE CLICKABLE */}
+              <Link
+                href={`/access/${p.id}`}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  display: 'block',
+                }}
+              >
+                {p.photo_url && (
+                  <img
+                    src={p.photo_url}
+                    alt={p.name}
+                    style={{
+                      width: '100%',
+                      height: '220px',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                )}
+
+                <div style={{ padding: '20px 20px 10px' }}>
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      marginBottom: '14px',
+                      padding: '7px 12px',
+                      borderRadius: '999px',
+                      background: '#f3e8ff',
+                      color: '#7c3aed',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Active Property
+                  </div>
+
+                  <h2
+                    style={{
+                      margin: '0 0 12px 0',
+                      fontSize: '24px',
+                      lineHeight: 1.2,
+                      color: '#111827',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {p.name}
+                  </h2>
+
+                  <p
+                    style={{
+                      margin: '0 0 8px 0',
+                      color: '#374151',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {p.address}
+                  </p>
+
+                  <p
+                    style={{
+                      margin: '0 0 20px 0',
+                      color: '#6b7280',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {p.city}, {p.state}
+                  </p>
+                </div>
+              </Link>
+
+              {/* ACTIONS */}
+              <div
+                style={{
+                  padding: '0 20px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Link
+                  href={`/access/${p.id}`}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#111827',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                  }}
+                >
+                  View Property →
+                </Link>
+
+                <Link
+                  href={`/properties/${p.id}/edit`}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#7c3aed',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    background: '#f3e8ff',
+                  }}
+                >
+                  Manage
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
-  );
+
+        {/* ADD BUTTON */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: '40px',
+          }}
+        >
+          <Link
+            href="/properties/new"
+            style={{
+              textDecoration: 'none',
+              background: '#111',
+              color: '#fff',
+              padding: '14px 20px',
+              borderRadius: '14px',
+              fontWeight: 700,
+              fontSize: '16px',
+            }}
+          >
+            + Add Property
+          </Link>
+        </div>
+      </div>
+
+      {/* HOVER EFFECT */}
+      <style>
+        {`
+          .property-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+            border-color: #d8b4fe;
+          }
+        `}
+      </style>
+    </main>
+  )
 }
