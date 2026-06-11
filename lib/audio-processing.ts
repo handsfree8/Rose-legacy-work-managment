@@ -1,4 +1,4 @@
-import { openai } from './openai'
+import { getOpenAI } from './openai'
 
 export type MaintenanceAnalysis = {
   title: string
@@ -31,7 +31,7 @@ export async function transcribeAudioFromUrl(recordingUrl: string) {
 
   const file = new File([bytes], 'recording.mp3', { type: 'audio/mpeg' })
 
-  const transcription = await openai.audio.transcriptions.create({
+  const transcription = await getOpenAI().audio.transcriptions.create({
     file,
     model: 'gpt-4o-transcribe',
   })
@@ -92,7 +92,7 @@ Transcript:
 """${transcript}"""
 `
 
-  const response = await openai.responses.create({
+  const response = await getOpenAI().responses.create({
     model: 'gpt-4.1-mini',
     input: prompt,
   })
