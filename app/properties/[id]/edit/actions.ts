@@ -40,6 +40,17 @@ export async function updateProperty(formData: FormData) {
 export async function deleteProperty(formData: FormData) {
   const id = formData.get('id')?.toString() || ''
 
+  // Detach invoices (kept for accounting), then remove dependents that
+  // block the property's foreign keys: tickets and calls.
+  await supabase.from('invoices').update({ property_id: null }).eq('property_id', id)
+  const { data: tickets } = await supabase.from('tickets').select('id').eq('property_id', id)
+  const ticketIds = (tickets || []).map((t) => t.id)
+  if (ticketIds.length) {
+    await supabase.from('invoices').update({ ticket_id: null }).in('ticket_id', ticketIds)
+  }
+  await supabase.from('tickets').delete().eq('property_id', id)
+  await supabase.from('calls').delete().eq('property_id', id)
+
   const { error } = await supabase
     .from('properties')
     .delete()

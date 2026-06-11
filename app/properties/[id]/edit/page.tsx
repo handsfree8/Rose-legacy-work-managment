@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { updateProperty, deleteProperty } from './actions'
 import ImageUpload from '@/app/components/ImageUpload'
+import DeletePropertyButton from './DeletePropertyButton'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -187,20 +188,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
           <form action={deleteProperty} style={{ marginTop: '16px' }}>
             <input type="hidden" name="id" value={property.id} />
 
-            <button
-              type="submit"
-              style={{
-                background: '#b91c1c',
-                color: '#fff',
-                border: 'none',
-                padding: '14px 18px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Delete Property
-            </button>
+            <DeletePropertyButton />
           </form>
         </div>
       </div>

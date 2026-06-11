@@ -59,22 +59,18 @@ export default function RootLayout({
                 gap: "10px",
               }}
             >
-              <span
+              <img
+                src="/logo.png"
+                alt="Rose Legacy logo"
                 style={{
-                  width: "34px",
-                  height: "34px",
+                  width: "38px",
+                  height: "38px",
                   borderRadius: "10px",
-                  background: "var(--purple)",
-                  color: "#fff",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 800,
-                  fontSize: "15px",
+                  objectFit: "cover",
+                  border: "1px solid var(--border)",
+                  background: "#fff",
                 }}
-              >
-                RL
-              </span>
+              />
               <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
                 <span style={{ color: "var(--text)", fontWeight: 700, fontSize: "16px" }}>
                   Rose Legacy
