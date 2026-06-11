@@ -5,13 +5,18 @@ import {
   transcribeAudioFromUrl,
 } from '@/lib/audio-processing'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy-init: SUPABASE_SERVICE_ROLE_KEY is only needed when Twilio actually
+// calls this webhook, not at build time.
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabase()
     const { searchParams } = new URL(req.url)
 
     const propertyId = searchParams.get('propertyId')
