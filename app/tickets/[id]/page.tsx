@@ -63,6 +63,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
   const priorityStyle = getPriorityBadgeStyle(ticket.priority)
   const statusStyle = getStatusBadgeStyle(ticket.status)
   const isCompleted = ['completed', 'closed'].includes((ticket.status || '').toLowerCase())
+  const invoiceAppUrl = process.env.NEXT_PUBLIC_INVOICE_APP_URL
 
   return (
     <main
@@ -125,6 +126,24 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                   Mark Completed
                 </button>
               </form>
+            )}
+
+            {isCompleted && invoiceAppUrl && (
+              <a
+                href={`${invoiceAppUrl}?ticket=${ticket.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  textDecoration: 'none',
+                  background: '#5b2d90',
+                  color: '#fff',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                }}
+              >
+                Generate Invoice
+              </a>
             )}
 
             <Link
