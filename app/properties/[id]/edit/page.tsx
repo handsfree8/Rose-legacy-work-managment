@@ -26,9 +26,9 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
       <main
         style={{
           padding: '24px',
-          fontFamily: 'Arial, sans-serif',
+          
           minHeight: '100vh',
-          background: '#f7f7f7',
+          background: 'var(--bg)',
         }}
       >
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -38,7 +38,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
               display: 'inline-block',
               marginBottom: '20px',
               textDecoration: 'none',
-              color: '#111',
+              color: 'var(--purple)',
               fontWeight: 600,
             }}
           >
@@ -54,8 +54,8 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
     <main
       style={{
         padding: '24px',
-        fontFamily: 'Arial, sans-serif',
-        background: '#f7f7f7',
+        
+        background: 'var(--bg)',
         minHeight: '100vh',
       }}
     >
@@ -66,7 +66,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
             display: 'inline-block',
             marginBottom: '20px',
             textDecoration: 'none',
-            color: '#111',
+            color: 'var(--purple)',
             fontWeight: 600,
           }}
         >
@@ -76,14 +76,14 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
         <div
           style={{
             background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '16px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
             padding: '24px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow)',
           }}
         >
           <h1 style={{ marginTop: 0, marginBottom: '8px' }}>Edit Property</h1>
-          <p style={{ color: '#666', marginBottom: '24px' }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
             Update property information or delete it.
           </p>
 
@@ -102,7 +102,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                 }}
               />
             </div>
@@ -119,7 +119,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                 }}
               />
             </div>
@@ -143,7 +143,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 />
               </div>
@@ -160,7 +160,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 />
               </div>
@@ -171,7 +171,7 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
             <button
               type="submit"
               style={{
-                background: '#111',
+                background: 'var(--purple)',
                 color: '#fff',
                 border: 'none',
                 padding: '14px 18px',

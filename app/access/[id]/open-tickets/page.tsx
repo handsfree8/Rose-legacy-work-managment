@@ -27,17 +27,17 @@ export default async function OpenTicketsPage({ params }: PageProps) {
     .order('created_at', { ascending: false })
 
   return (
-    <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif', background: '#f7f7f7', minHeight: '100vh' }}>
+    <main style={{ padding: '20px',  background: 'var(--bg)', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <Link href={`/access/${id}`} style={{ textDecoration: 'none', color: '#111', fontWeight: 600 }}>
+        <Link href={`/access/${id}`} style={{ textDecoration: 'none', color: 'var(--purple)', fontWeight: 600 }}>
           ← Back to property
         </Link>
 
         <h1 style={{ marginTop: '20px' }}>Open Tickets</h1>
-        <p style={{ color: '#666' }}>{property?.name}</p>
+        <p style={{ color: 'var(--text-muted)' }}>{property?.name}</p>
 
         {!tickets || tickets.length === 0 ? (
-          <div style={{ marginTop: '20px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #ddd' }}>
+          <div style={{ marginTop: '20px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
             No open tickets.
           </div>
         ) : (
@@ -48,9 +48,9 @@ export default async function OpenTicketsPage({ params }: PageProps) {
                 href={`/tickets/${ticket.id}`}
                 style={{ textDecoration: 'none', color: 'inherit' }}
               >
-                <div style={{ background: '#fff', border: '1px solid #ddd', borderRadius: '12px', padding: '18px' }}>
+                <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}>
                   <h3 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h3>
-                  <p style={{ margin: '0 0 8px 0', color: '#666' }}>Unit: {ticket.unit_number || 'N/A'}</p>
+                  <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>Unit: {ticket.unit_number || 'N/A'}</p>
                   <p style={{ margin: '0 0 8px 0' }}>{ticket.summary_es || ticket.summary_en}</p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
                     Created: {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'N/A'}

@@ -27,17 +27,17 @@ export default async function CallsTodayPage({ params }: PageProps) {
     .order('created_at', { ascending: false })
 
   return (
-    <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif', background: '#f7f7f7', minHeight: '100vh' }}>
+    <main style={{ padding: '20px',  background: 'var(--bg)', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <Link href={`/access/${id}`} style={{ textDecoration: 'none', color: '#111', fontWeight: 600 }}>
+        <Link href={`/access/${id}`} style={{ textDecoration: 'none', color: 'var(--purple)', fontWeight: 600 }}>
           ← Back to property
         </Link>
 
         <h1 style={{ marginTop: '20px' }}>Calls Today</h1>
-        <p style={{ color: '#666' }}>{property?.name}</p>
+        <p style={{ color: 'var(--text-muted)' }}>{property?.name}</p>
 
         {!calls || calls.length === 0 ? (
-          <div style={{ marginTop: '20px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #ddd' }}>
+          <div style={{ marginTop: '20px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
             No calls today.
           </div>
         ) : (
@@ -45,10 +45,10 @@ export default async function CallsTodayPage({ params }: PageProps) {
             {calls.map((call) => (
               <div
                 key={call.id}
-                style={{ background: '#fff', border: '1px solid #ddd', borderRadius: '12px', padding: '18px' }}
+                style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}
               >
                 <h3 style={{ margin: '0 0 8px 0' }}>Call from {call.caller_phone || 'Unknown caller'}</h3>
-                <p style={{ margin: '0 0 8px 0', color: '#666' }}>
+                <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>
                   Language: {call.language_detected || 'Unknown'}
                 </p>
                 <p style={{ margin: '0 0 8px 0' }}>

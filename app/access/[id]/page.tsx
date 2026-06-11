@@ -21,7 +21,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   if (propertyError || !property) {
     return (
-      <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <main style={{ padding: '20px' }}>
         <Link href="/" style={{ display: 'inline-block', marginBottom: '20px' }}>
           ← Back
         </Link>
@@ -78,22 +78,22 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
   const getStatusBadgeStyle = (status: string | null) => {
     const normalized = (status || '').toLowerCase()
 
-    if (normalized === 'new') return { background: '#f5f5f5', color: '#111' }
+    if (normalized === 'new') return { background: '#f5f5f5', color: 'var(--purple)' }
     if (normalized === 'in_progress') return { background: '#e6f4ff', color: '#0958d9' }
     if (normalized === 'reviewed') return { background: '#fff7e6', color: '#d46b08' }
     if (normalized === 'dispatched') return { background: '#f6ffed', color: '#389e0d' }
     if (normalized === 'completed') return { background: '#f6ffed', color: '#389e0d' }
     if (normalized === 'closed') return { background: '#f0f5ff', color: '#1d39c4' }
 
-    return { background: '#f5f5f5', color: '#333' }
+    return { background: '#f5f5f5', color: 'var(--text)' }
   }
 
   return (
     <main
       style={{
         padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-        background: '#f7f7f7',
+        
+        background: 'var(--bg)',
         minHeight: '100vh',
       }}
     >
@@ -112,7 +112,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             href="/"
             style={{
               textDecoration: 'none',
-              color: '#111',
+              color: 'var(--purple)',
               fontWeight: 600,
             }}
           >
@@ -123,7 +123,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             href={`/access/${id}/new-ticket`}
             style={{
               textDecoration: 'none',
-              background: '#111',
+              background: 'var(--purple)',
               color: '#fff',
               padding: '10px 16px',
               borderRadius: '10px',
@@ -136,8 +136,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
         <div
           style={{
-            border: '1px solid #ddd',
-            borderRadius: '16px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
             overflow: 'hidden',
             backgroundColor: '#fff',
             boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
@@ -160,7 +160,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
           <div style={{ padding: '24px' }}>
             <h1 style={{ margin: '0 0 8px 0', fontSize: '32px' }}>{property.name}</h1>
             <p style={{ margin: '0 0 6px 0', color: '#444', fontSize: '18px' }}>{property.address}</p>
-            <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '16px' }}>
               {property.city}, {property.state} {property.zip_code}
             </p>
           </div>
@@ -178,7 +178,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <div
               style={{
                 background: '#fff',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -194,7 +194,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <div
               style={{
                 background: '#fff',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -210,7 +210,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <div
               style={{
                 background: '#fff',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -226,7 +226,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <div
               style={{
                 background: '#fff',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '14px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -242,10 +242,10 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
         <div
           style={{
             background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '16px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
             padding: '24px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow)',
           }}
         >
           <div
@@ -259,7 +259,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             <h2 style={{ margin: 0 }}>Recent Open Tickets</h2>
             <Link
               href={`/access/${id}/work-order-history`}
-              style={{ textDecoration: 'none', fontWeight: 700, color: '#111' }}
+              style={{ textDecoration: 'none', fontWeight: 700, color: 'var(--purple)' }}
             >
               View Work Order History →
             </Link>
@@ -276,8 +276,8 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                 borderRadius: '12px',
                 padding: '24px',
                 textAlign: 'center',
-                color: '#666',
-                background: '#fafafa',
+                color: 'var(--text-muted)',
+                background: 'var(--purple-light)',
               }}
             >
               No open tickets for this property.
@@ -296,7 +296,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                   >
                     <div
                       style={{
-                        border: '1px solid #e3e3e3',
+                        border: '1px solid var(--border)',
                         borderRadius: '12px',
                         padding: '18px',
                         background: '#fff',
@@ -314,7 +314,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                       >
                         <div>
                           <h3 style={{ margin: '0 0 6px 0' }}>{ticket.title}</h3>
-                          <p style={{ margin: '0 0 8px 0', color: '#666' }}>
+                          <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>
                             Address: {ticket.reported_address || 'N/A'}
                           </p>
                         </div>
@@ -348,7 +348,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                         </div>
                       </div>
 
-                      <p style={{ margin: '10px 0 6px 0', color: '#333' }}>
+                      <p style={{ margin: '10px 0 6px 0', color: 'var(--text)' }}>
                         {ticket.summary_es || ticket.summary_en || 'No summary available.'}
                       </p>
 

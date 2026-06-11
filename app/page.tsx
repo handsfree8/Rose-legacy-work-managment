@@ -16,9 +16,9 @@ export default async function Home() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#f6f7fb',
+        background: 'var(--bg)',
         padding: '48px 24px 80px',
-        fontFamily: 'Arial, sans-serif',
+        
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -28,7 +28,7 @@ export default async function Home() {
           <p
             style={{
               margin: 0,
-              color: '#7c3aed',
+              color: 'var(--purple-mid)',
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
@@ -43,7 +43,7 @@ export default async function Home() {
               margin: '10px 0 10px',
               fontSize: '52px',
               lineHeight: 1.05,
-              color: '#111827',
+              color: 'var(--text)',
               fontWeight: 700,
             }}
           >
@@ -127,8 +127,8 @@ export default async function Home() {
                       marginBottom: '14px',
                       padding: '7px 12px',
                       borderRadius: '999px',
-                      background: '#f3e8ff',
-                      color: '#7c3aed',
+                      background: 'var(--purple-soft)',
+                      color: 'var(--purple-mid)',
                       fontSize: '12px',
                       fontWeight: 700,
                     }}
@@ -141,7 +141,7 @@ export default async function Home() {
                       margin: '0 0 12px 0',
                       fontSize: '24px',
                       lineHeight: 1.2,
-                      color: '#111827',
+                      color: 'var(--text)',
                       fontWeight: 700,
                     }}
                   >
@@ -183,7 +183,7 @@ export default async function Home() {
                   href={`/access/${p.id}`}
                   style={{
                     textDecoration: 'none',
-                    color: '#111827',
+                    color: 'var(--text)',
                     fontWeight: 700,
                     fontSize: '15px',
                   }}
@@ -195,12 +195,12 @@ export default async function Home() {
                   href={`/properties/${p.id}/edit`}
                   style={{
                     textDecoration: 'none',
-                    color: '#7c3aed',
+                    color: 'var(--purple-mid)',
                     fontWeight: 700,
                     fontSize: '14px',
                     padding: '8px 12px',
                     borderRadius: '10px',
-                    background: '#f3e8ff',
+                    background: 'var(--purple-soft)',
                   }}
                 >
                   Manage
@@ -222,7 +222,7 @@ export default async function Home() {
             href="/properties/new"
             style={{
               textDecoration: 'none',
-              background: '#111',
+              background: 'var(--purple)',
               color: '#fff',
               padding: '14px 20px',
               borderRadius: '14px',
@@ -241,7 +241,7 @@ export default async function Home() {
           .property-card:hover {
             transform: translateY(-6px);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
-            border-color: #d8b4fe;
+            border-color: var(--purple-soft);
           }
         `}
       </style>

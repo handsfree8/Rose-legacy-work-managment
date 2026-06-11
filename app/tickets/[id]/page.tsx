@@ -22,7 +22,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
   if (error || !ticket) {
     return (
-      <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <main style={{ padding: '20px' }}>
         <Link href="/" style={{ display: 'inline-block', marginBottom: '20px' }}>
           ← Back
         </Link>
@@ -50,14 +50,14 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
   const getStatusBadgeStyle = (status: string | null) => {
     const normalized = (status || '').toLowerCase()
 
-    if (normalized === 'new') return { background: '#f5f5f5', color: '#111' }
+    if (normalized === 'new') return { background: '#f5f5f5', color: 'var(--purple)' }
     if (normalized === 'in_progress') return { background: '#e6f4ff', color: '#0958d9' }
     if (normalized === 'reviewed') return { background: '#fff7e6', color: '#d46b08' }
     if (normalized === 'dispatched') return { background: '#f6ffed', color: '#389e0d' }
     if (normalized === 'completed') return { background: '#f6ffed', color: '#389e0d' }
     if (normalized === 'closed') return { background: '#f0f5ff', color: '#1d39c4' }
 
-    return { background: '#f5f5f5', color: '#333' }
+    return { background: '#f5f5f5', color: 'var(--text)' }
   }
 
   const priorityStyle = getPriorityBadgeStyle(ticket.priority)
@@ -69,8 +69,8 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
     <main
       style={{
         padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-        background: '#f7f7f7',
+        
+        background: 'var(--bg)',
         minHeight: '100vh',
       }}
     >
@@ -92,7 +92,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                 display: 'inline-block',
                 marginBottom: '10px',
                 textDecoration: 'none',
-                color: '#111',
+                color: 'var(--purple)',
                 fontWeight: 600,
               }}
             >
@@ -100,7 +100,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             </Link>
 
             {property && (
-              <p style={{ margin: 0, color: '#666' }}>
+              <p style={{ margin: 0, color: 'var(--text-muted)' }}>
                 Property: <strong>{property.name}</strong>
               </p>
             )}
@@ -135,7 +135,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                 rel="noopener noreferrer"
                 style={{
                   textDecoration: 'none',
-                  background: '#5b2d90',
+                  background: 'var(--purple)',
                   color: '#fff',
                   padding: '10px 16px',
                   borderRadius: '10px',
@@ -150,7 +150,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               href={`/tickets/${ticket.id}/edit`}
               style={{
                 textDecoration: 'none',
-                background: '#111',
+                background: 'var(--purple)',
                 color: '#fff',
                 padding: '10px 16px',
                 borderRadius: '10px',
@@ -165,10 +165,10 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
         <div
           style={{
             background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '16px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
             padding: '24px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--shadow)',
           }}
         >
           <div
@@ -183,7 +183,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
           >
             <div>
               <h1 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h1>
-              <p style={{ margin: 0, color: '#666' }}>
+              <p style={{ margin: 0, color: 'var(--text-muted)' }}>
                 Address: {ticket.reported_address || 'N/A'}
               </p>
             </div>
@@ -227,10 +227,10 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
           >
             <div
               style={{
-                border: '1px solid #e3e3e3',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '16px',
-                background: '#fafafa',
+                background: 'var(--purple-light)',
               }}
             >
               <h3 style={{ marginTop: 0 }}>Category</h3>
@@ -242,10 +242,10 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
             <div
               style={{
-                border: '1px solid #e3e3e3',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '16px',
-                background: '#fafafa',
+                background: 'var(--purple-light)',
               }}
             >
               <h3 style={{ marginTop: 0 }}>Emergency</h3>
@@ -254,10 +254,10 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
             <div
               style={{
-                border: '1px solid #e3e3e3',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '16px',
-                background: '#fafafa',
+                background: 'var(--purple-light)',
               }}
             >
               <h3 style={{ marginTop: 0 }}>Created</h3>
@@ -273,7 +273,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
             <div
               style={{
-                border: '1px solid #e3e3e3',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '16px',
                 background: '#fff',
@@ -289,10 +289,10 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             <h2>Recommended Action</h2>
             <div
               style={{
-                border: '1px solid #e3e3e3',
+                border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '16px',
-                background: '#fafafa',
+                background: 'var(--purple-light)',
               }}
             >
               <p style={{ margin: 0 }}>

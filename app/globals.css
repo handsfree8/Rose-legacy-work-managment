@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Rose Legacy palette — matches the invoice app */
+  --purple:       #4a2080;
+  --purple-mid:   #6b35b8;
+  --purple-soft:  #e8dff5;
+  --purple-light: #f0eaf8;
+  --gold:         #c9a84c;
+  --bg:           #f7f6fb;
+  --card:         #ffffff;
+  --border:       #e4e1ee;
+  --text:         #1a1625;
+  --text-muted:   #7a6e8a;
+  --radius:       14px;
+  --radius-sm:    10px;
+  --shadow:       0 2px 16px rgba(74, 32, 128, 0.07);
+  --shadow-lg:    0 8px 32px rgba(74, 32, 128, 0.13);
+
+  --background: var(--bg);
+  --foreground: var(--text);
 }
 
 @theme inline {
@@ -12,15 +28,64 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* The app is a light-themed product UI; never flip to dark automatically.
+   (Inline card backgrounds are white, so dark-mode text became unreadable.) */
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+/* Form controls: explicit colors so OS dark mode can't make them unreadable */
+input, select, textarea {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--purple-mid);
+  box-shadow: 0 0 0 3px var(--purple-soft);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+a {
+  transition: color 0.15s, opacity 0.15s;
+}
+
+a:hover {
+  opacity: 0.85;
 }

@@ -22,7 +22,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
 
   if (error || !ticket) {
     return (
-      <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <main style={{ padding: '20px' }}>
         <Link href="/" style={{ display: 'inline-block', marginBottom: '20px' }}>
           ← Back
         </Link>
@@ -35,8 +35,8 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
     <main
       style={{
         padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-        background: '#f7f7f7',
+        
+        background: 'var(--bg)',
         minHeight: '100vh',
       }}
     >
@@ -47,7 +47,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
             display: 'inline-block',
             marginBottom: '20px',
             textDecoration: 'none',
-            color: '#111',
+            color: 'var(--purple)',
             fontWeight: 600,
           }}
         >
@@ -57,10 +57,10 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
         <div
           style={{
             background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '16px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
             padding: '24px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow)',
           }}
         >
           <h1 style={{ marginTop: 0 }}>Edit Ticket</h1>
@@ -81,7 +81,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                 }}
               />
             </div>
@@ -97,7 +97,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                 }}
               />
             </div>
@@ -120,7 +120,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 />
               </div>
@@ -136,7 +136,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 />
               </div>
@@ -160,7 +160,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 >
                   <option value="low">Low</option>
@@ -181,7 +181,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                     width: '100%',
                     padding: '12px',
                     borderRadius: '10px',
-                    border: '1px solid #ccc',
+                    border: '1px solid var(--border)',
                   }}
                 >
                   <option value="new">New</option>
@@ -206,7 +206,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                   resize: 'vertical',
                 }}
               />
@@ -224,7 +224,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                   resize: 'vertical',
                 }}
               />
@@ -242,7 +242,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '10px',
-                  border: '1px solid #ccc',
+                  border: '1px solid var(--border)',
                   resize: 'vertical',
                 }}
               />
@@ -263,7 +263,7 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
             <button
               type="submit"
               style={{
-                background: '#111',
+                background: 'var(--purple)',
                 color: '#fff',
                 border: 'none',
                 padding: '14px 18px',

@@ -64,7 +64,7 @@ export default function ImageUpload({ defaultValue = '' }: ImageUploadProps) {
           width: '100%',
           padding: '12px',
           borderRadius: '10px',
-          border: '1px solid #ccc',
+          border: '1px solid var(--border)',
           background: '#fff',
         }}
       />
@@ -91,7 +91,7 @@ export default function ImageUpload({ defaultValue = '' }: ImageUploadProps) {
               maxHeight: '220px',
               objectFit: 'cover',
               borderRadius: '12px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--border)',
               display: 'block',
             }}
           />
