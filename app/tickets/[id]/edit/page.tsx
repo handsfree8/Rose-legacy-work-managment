@@ -260,6 +260,65 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
               Emergency
             </label>
 
+            <h2 style={{ marginBottom: 0 }}>Tenant Information</h2>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              }}
+            >
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                  Tenant Name
+                </label>
+                <input
+                  name="tenant_name"
+                  defaultValue={ticket.tenant_name || ''}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                  Tenant Phone
+                </label>
+                <input
+                  name="tenant_phone"
+                  defaultValue={ticket.tenant_phone || ''}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                  Tenant Email
+                </label>
+                <input
+                  name="tenant_email"
+                  type="email"
+                  defaultValue={ticket.tenant_email || ''}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
               style={{

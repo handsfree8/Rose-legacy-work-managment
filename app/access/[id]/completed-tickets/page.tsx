@@ -26,6 +26,12 @@ export default async function CompletedTicketsPage({ params }: PageProps) {
     .in('status', ['completed', 'closed'])
     .order('created_at', { ascending: false })
 
+  const ticketIds = (tickets || []).map((t) => t.id)
+  const { data: invoices } = ticketIds.length
+    ? await supabase.from('invoices').select('id, invoice_number, ticket_id').in('ticket_id', ticketIds)
+    : { data: [] }
+  const invoiceByTicket = new Map((invoices || []).map((inv) => [inv.ticket_id, inv]))
+
   return (
     <main style={{ padding: '20px',  background: 'var(--bg)', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -49,8 +55,19 @@ export default async function CompletedTicketsPage({ params }: PageProps) {
                 style={{ textDecoration: 'none', color: 'inherit' }}
               >
                 <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '18px' }}>
-                  <h3 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h3>
-                  <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>Unit: {ticket.unit_number || 'N/A'}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h3>
+                    {invoiceByTicket.has(ticket.id) ? (
+                      <span style={{ background: 'var(--purple-soft)', color: 'var(--purple)', fontWeight: 700, fontSize: '12px', padding: '4px 10px', borderRadius: '999px' }}>
+                        Invoiced{invoiceByTicket.get(ticket.id)?.invoice_number ? ` · ${invoiceByTicket.get(ticket.id)?.invoice_number}` : ''}
+                      </span>
+                    ) : (
+                      <span style={{ background: '#fff7e6', color: '#d46b08', fontWeight: 700, fontSize: '12px', padding: '4px 10px', borderRadius: '999px' }}>
+                        Not Invoiced
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>Address: {ticket.unit_number || 'N/A'}</p>
                   <p style={{ margin: '0 0 8px 0' }}>{ticket.summary_es || ticket.summary_en}</p>
                   <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
                     Created: {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'N/A'}

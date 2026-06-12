@@ -37,6 +37,12 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
     .eq('id', ticket.property_id)
     .single()
 
+  const { data: existingInvoice } = await supabase
+    .from('invoices')
+    .select('id, invoice_number')
+    .eq('ticket_id', ticket.id)
+    .maybeSingle()
+
   const getPriorityBadgeStyle = (priority: string | null) => {
     const normalized = (priority || '').toLowerCase()
 
@@ -128,7 +134,26 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               </form>
             )}
 
-            {isCompleted && invoiceAppUrl && (
+            {isCompleted && invoiceAppUrl && existingInvoice && (
+              <a
+                href={`${invoiceAppUrl}?invoice=${existingInvoice.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  textDecoration: 'none',
+                  background: 'var(--purple-soft)',
+                  color: 'var(--purple)',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  border: '1px solid var(--purple)',
+                }}
+              >
+                View Invoice {existingInvoice.invoice_number ? `(${existingInvoice.invoice_number})` : ''}
+              </a>
+            )}
+
+            {isCompleted && invoiceAppUrl && !existingInvoice && (
               <a
                 href={`${invoiceAppUrl}?ticket=${ticket.id}`}
                 target="_blank"
@@ -184,7 +209,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             <div>
               <h1 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h1>
               <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                Address: {ticket.reported_address || 'N/A'}
+                Address: {ticket.unit_number || ticket.reported_address || 'N/A'}
               </p>
             </div>
 
@@ -285,7 +310,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             </div>
           </div>
 
-          <div>
+          <div style={{ marginBottom: '24px' }}>
             <h2>Recommended Action</h2>
             <div
               style={{
@@ -297,6 +322,30 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             >
               <p style={{ margin: 0 }}>
                 {ticket.recommended_action || 'No recommended action available.'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h2>Tenant Information</h2>
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '16px',
+                background: '#fff',
+                display: 'grid',
+                gap: '6px',
+              }}
+            >
+              <p style={{ margin: 0 }}>
+                <strong>Name:</strong> {ticket.tenant_name || 'N/A'}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Phone:</strong> {ticket.tenant_phone || 'N/A'}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Email:</strong> {ticket.tenant_email || 'N/A'}
               </p>
             </div>
           </div>

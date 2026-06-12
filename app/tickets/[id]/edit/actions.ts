@@ -21,6 +21,9 @@ export async function updateTicket(formData: FormData) {
   const summaryEn = String(formData.get('summary_en') || '')
   const recommendedAction = String(formData.get('recommended_action') || '')
   const emergency = formData.get('emergency') === 'on'
+  const tenantName = String(formData.get('tenant_name') || '')
+  const tenantPhone = String(formData.get('tenant_phone') || '')
+  const tenantEmail = String(formData.get('tenant_email') || '')
 
   if (!ticketId || !propertyId || !title) {
     throw new Error('Ticket ID, property ID, and title are required.')
@@ -39,6 +42,9 @@ export async function updateTicket(formData: FormData) {
       summary_en: summaryEn || null,
       recommended_action: recommendedAction || null,
       emergency,
+      tenant_name: tenantName || null,
+      tenant_phone: tenantPhone || null,
+      tenant_email: tenantEmail || null,
     })
     .eq('id', ticketId)
 
