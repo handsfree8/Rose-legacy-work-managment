@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { markTicketCompleted } from './actions'
+import { markTicketCompleted, createEstimate, deleteEstimate } from './actions'
+import TicketPhotoUpload from '@/app/components/TicketPhotoUpload'
+import PhotoGallery from '@/app/components/PhotoGallery'
+import SubmitButton from '@/app/components/SubmitButton'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,6 +45,27 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
     .select('id, invoice_number')
     .eq('ticket_id', ticket.id)
     .maybeSingle()
+
+  const { data: photos } = await supabase
+    .from('ticket_photos')
+    .select('id, url, photo_type')
+    .eq('ticket_id', ticket.id)
+    .order('created_at', { ascending: true })
+
+  const beforePhotos = (photos || []).filter((p) => p.photo_type === 'before')
+  const afterPhotos = (photos || []).filter((p) => p.photo_type === 'after')
+
+  const { data: estimates } = await supabase
+    .from('estimates')
+    .select('*')
+    .eq('ticket_id', ticket.id)
+    .order('created_at', { ascending: false })
+
+  const getEstimateStatusStyle = (status: string) => {
+    if (status === 'approved') return { background: '#f6ffed', color: '#389e0d' }
+    if (status === 'rejected') return { background: '#fff1f0', color: '#cf1322' }
+    return { background: '#fff7e6', color: '#d46b08' }
+  }
 
   const getPriorityBadgeStyle = (priority: string | null) => {
     const normalized = (priority || '').toLowerCase()
@@ -326,7 +350,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
             </div>
           </div>
 
-          <div>
+          <div style={{ marginBottom: '24px' }}>
             <h2>Tenant Information</h2>
             <div
               style={{
@@ -347,6 +371,193 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               <p style={{ margin: 0 }}>
                 <strong>Email:</strong> {ticket.tenant_email || 'N/A'}
               </p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <h2>Job Photos</h2>
+            <div
+              style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              }}
+            >
+              <div
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  background: '#fff',
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>Before</h3>
+                <div style={{ marginBottom: '12px' }}>
+                  <PhotoGallery photos={beforePhotos} emptyLabel="No 'before' photos yet." />
+                </div>
+                <TicketPhotoUpload ticketId={ticket.id} photoType="before" />
+              </div>
+
+              <div
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  background: '#fff',
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>After</h3>
+                <div style={{ marginBottom: '12px' }}>
+                  <PhotoGallery photos={afterPhotos} emptyLabel="No 'after' photos yet." />
+                </div>
+                <TicketPhotoUpload ticketId={ticket.id} photoType="after" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2>Estimates</h2>
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '16px',
+                background: '#fff',
+              }}
+            >
+              {(!estimates || estimates.length === 0) && (
+                <p style={{ margin: '0 0 16px 0', color: 'var(--text-muted)' }}>
+                  No estimates created for this ticket yet.
+                </p>
+              )}
+
+              {estimates && estimates.length > 0 && (
+                <div style={{ display: 'grid', gap: '10px', marginBottom: '16px' }}>
+                  {estimates.map((estimate) => (
+                    <div
+                      key={estimate.id}
+                      style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        padding: '12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>
+                          ${Number(estimate.amount).toFixed(2)}
+                        </p>
+                        <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            textTransform: 'capitalize',
+                            ...getEstimateStatusStyle(estimate.status),
+                          }}
+                        >
+                          {estimate.status}
+                        </span>
+
+                        {estimate.status === 'pending' && (
+                          <form action={deleteEstimate}>
+                            <input type="hidden" name="estimate_id" value={estimate.id} />
+                            <input type="hidden" name="ticket_id" value={ticket.id} />
+                            <button
+                              type="submit"
+                              style={{
+                                background: 'none',
+                                border: '1px solid #b91c1c',
+                                color: '#b91c1c',
+                                borderRadius: '8px',
+                                padding: '6px 10px',
+                                fontWeight: 600,
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <form action={createEstimate} style={{ display: 'grid', gap: '12px' }}>
+                <input type="hidden" name="ticket_id" value={ticket.id} />
+                <input type="hidden" name="property_id" value={ticket.property_id} />
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '12px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  }}
+                >
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                      Description
+                    </label>
+                    <input
+                      name="description"
+                      placeholder="Example: Replace AC condenser unit"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                      Amount ($)
+                    </label>
+                    <input
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <SubmitButton
+                  pendingText="Adding..."
+                  style={{
+                    background: 'var(--purple)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '12px 18px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    justifySelf: 'start',
+                  }}
+                >
+                  Add Estimate
+                </SubmitButton>
+              </form>
             </div>
           </div>
         </div>

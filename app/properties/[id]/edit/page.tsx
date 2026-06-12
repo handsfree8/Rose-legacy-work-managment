@@ -190,6 +190,37 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
 
             <DeletePropertyButton />
           </form>
+
+          {property.landlord_token && (
+            <div
+              style={{
+                marginTop: '24px',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid var(--border)',
+                background: 'var(--purple-light)',
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>Landlord Portal Link</h3>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>
+                Share this read-only link with the landlord or real estate agent to view tickets,
+                before/after photos, invoices, and approve estimates.
+              </p>
+              <code
+                style={{
+                  display: 'block',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  background: '#fff',
+                  border: '1px solid var(--border)',
+                  wordBreak: 'break-all',
+                  fontSize: '13px',
+                }}
+              >
+                {`${process.env.NEXT_PUBLIC_SITE_URL || ''}/landlord/${property.landlord_token}`}
+              </code>
+            </div>
+          )}
         </div>
       </div>
     </main>
