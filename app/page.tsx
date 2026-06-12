@@ -25,6 +25,21 @@ export default async function Home() {
         
         {/* HEADER */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <img
+            src="/logo.png"
+            alt="Rose Legacy logo"
+            style={{
+              width: '88px',
+              height: '88px',
+              borderRadius: '18px',
+              objectFit: 'cover',
+              border: '1px solid var(--border)',
+              background: '#fff',
+              boxShadow: 'var(--shadow)',
+              marginBottom: '16px',
+            }}
+          />
+
           <p
             style={{
               margin: 0,

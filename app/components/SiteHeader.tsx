@@ -28,7 +28,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
         style={{
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '14px 24px',
+          padding: '20px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -42,26 +42,26 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '14px',
           }}
         >
           <img
             src="/logo.png"
             alt="Rose Legacy logo"
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
+              width: '52px',
+              height: '52px',
+              borderRadius: '12px',
               objectFit: 'cover',
               border: '1px solid var(--border)',
               background: '#fff',
             }}
           />
-          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-            <span style={{ color: 'var(--text)', fontWeight: 700, fontSize: '16px' }}>
+          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <span style={{ color: 'var(--text)', fontWeight: 700, fontSize: '20px' }}>
               Rose Legacy
             </span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '13px', letterSpacing: '0.04em' }}>
               Work Management
             </span>
           </span>
