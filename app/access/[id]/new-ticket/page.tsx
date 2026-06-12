@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { createTicket } from './actions'
+import SubmitButton from '@/app/components/SubmitButton'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -246,8 +247,8 @@ export default async function NewTicketPage({ params }: NewTicketPageProps) {
               Emergency
             </label>
 
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Saving..."
               style={{
                 background: 'var(--purple)',
                 color: '#fff',
@@ -255,11 +256,10 @@ export default async function NewTicketPage({ params }: NewTicketPageProps) {
                 padding: '14px 18px',
                 borderRadius: '10px',
                 fontWeight: 700,
-                cursor: 'pointer',
               }}
             >
               Save Ticket
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

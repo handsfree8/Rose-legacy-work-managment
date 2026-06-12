@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { updateTicket } from './actions'
+import { updateTicket, deleteTicket } from './actions'
+import DeleteTicketButton from './DeleteTicketButton'
+import SubmitButton from '@/app/components/SubmitButton'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -319,8 +321,8 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
               </div>
             </div>
 
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Saving..."
               style={{
                 background: 'var(--purple)',
                 color: '#fff',
@@ -328,11 +330,16 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
                 padding: '14px 18px',
                 borderRadius: '10px',
                 fontWeight: 700,
-                cursor: 'pointer',
               }}
             >
               Save Changes
-            </button>
+            </SubmitButton>
+          </form>
+
+          <form action={deleteTicket} style={{ marginTop: '16px' }}>
+            <input type="hidden" name="ticket_id" value={ticket.id} />
+            <input type="hidden" name="property_id" value={ticket.property_id} />
+            <DeleteTicketButton />
           </form>
         </div>
       </div>

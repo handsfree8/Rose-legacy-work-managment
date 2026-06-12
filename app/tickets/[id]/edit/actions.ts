@@ -54,3 +54,22 @@ export async function updateTicket(formData: FormData) {
 
   redirect(`/tickets/${ticketId}`)
 }
+
+export async function deleteTicket(formData: FormData) {
+  const ticketId = String(formData.get('ticket_id') || '')
+  const propertyId = String(formData.get('property_id') || '')
+
+  if (!ticketId || !propertyId) {
+    throw new Error('Missing ticket ID or property ID.')
+  }
+
+  await supabase.from('invoices').update({ ticket_id: null }).eq('ticket_id', ticketId)
+
+  const { error } = await supabase.from('tickets').delete().eq('id', ticketId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  redirect(`/access/${propertyId}`)
+}

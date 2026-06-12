@@ -25,6 +25,21 @@ export async function createTicket(formData: FormData) {
     throw new Error('Property ID and title are required.')
   }
 
+  // Guard against accidental double-submits (e.g. pressing Enter multiple times).
+  const tenSecondsAgo = new Date(Date.now() - 10_000).toISOString()
+  const { data: recentDuplicate } = await supabase
+    .from('tickets')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('title', title)
+    .gte('created_at', tenSecondsAgo)
+    .limit(1)
+    .maybeSingle()
+
+  if (recentDuplicate) {
+    redirect(`/access/${propertyId}`)
+  }
+
   const { error } = await supabase.from('tickets').insert({
     property_id: propertyId,
     title,
