@@ -393,7 +393,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               >
                 <h3 style={{ marginTop: 0 }}>Before</h3>
                 <div style={{ marginBottom: '12px' }}>
-                  <PhotoGallery photos={beforePhotos} emptyLabel="No 'before' photos yet." />
+                  <PhotoGallery photos={beforePhotos} emptyLabel="No 'before' photos yet." editable />
                 </div>
                 <TicketPhotoUpload ticketId={ticket.id} photoType="before" />
               </div>
@@ -408,7 +408,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               >
                 <h3 style={{ marginTop: 0 }}>After</h3>
                 <div style={{ marginBottom: '12px' }}>
-                  <PhotoGallery photos={afterPhotos} emptyLabel="No 'after' photos yet." />
+                  <PhotoGallery photos={afterPhotos} emptyLabel="No 'after' photos yet." editable />
                 </div>
                 <TicketPhotoUpload ticketId={ticket.id} photoType="after" />
               </div>
