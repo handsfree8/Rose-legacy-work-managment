@@ -35,6 +35,7 @@ type LandlordTicketCardProps = {
     created_at: string | null
     summary_en: string | null
     recommended_action: string | null
+    work_performed: string | null
   }
   beforePhotos: Photo[]
   afterPhotos: Photo[]
@@ -56,233 +57,331 @@ export default function LandlordTicketCard({
   const [expanded, setExpanded] = useState(false)
   const hasPhotos = beforePhotos.length > 0 || afterPhotos.length > 0
 
-  return (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        padding: '20px',
-        boxShadow: 'var(--shadow)',
-        cursor: 'pointer',
-        transition: 'box-shadow 0.15s ease',
-      }}
-      onClick={() => setExpanded((v) => !v)}
-    >
+  const detailContent = (
+    <>
+      {ticket.summary_en && (
+        <p style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{ticket.summary_en}</p>
+      )}
+
+      {ticket.recommended_action && (
+        <div
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: '10px',
+            padding: '12px',
+            background: 'var(--purple-light)',
+            marginBottom: '12px',
+          }}
+        >
+          <strong>Recommended action:</strong> {ticket.recommended_action}
+        </div>
+      )}
+
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: '12px',
-          flexWrap: 'wrap',
+          border: '1px solid var(--border)',
+          borderRadius: '10px',
+          padding: '12px',
+          background: '#fff',
+          marginBottom: '12px',
         }}
       >
-        <div>
-          <h2 style={{ margin: '0 0 4px 0' }}>{ticket.title}</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            {ticket.unit_number || 'N/A'} ·{' '}
-            {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : ''}
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span
-            style={{
-              padding: '8px 12px',
-              borderRadius: '999px',
-              fontSize: '13px',
-              fontWeight: 700,
-              textTransform: 'capitalize',
-              ...getStatusBadgeStyle(ticket.status),
-            }}
-          >
-            {(ticket.status || 'new').replace('_', ' ')}
-          </span>
-          <span style={{ color: 'var(--purple)', fontWeight: 700, fontSize: '13px' }}>
-            {expanded ? 'Hide details ▲' : 'View details ▼'}
-          </span>
-        </div>
+        <strong>Work performed:</strong>{' '}
+        {ticket.work_performed || 'Not documented yet.'}
       </div>
 
-      {!expanded && hasPhotos && (
+      {hasPhotos && (
+        <div
+          style={{
+            display: 'grid',
+            gap: '12px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            marginBottom: '12px',
+          }}
+        >
+          {beforePhotos.length > 0 && (
+            <div>
+              <h4 style={{ margin: '0 0 6px 0' }}>Before</h4>
+              <PhotoGallery photos={beforePhotos} />
+            </div>
+          )}
+          {afterPhotos.length > 0 && (
+            <div>
+              <h4 style={{ margin: '0 0 6px 0' }}>After</h4>
+              <PhotoGallery photos={afterPhotos} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {invoice && invoiceAppUrl && (
+        <a
+          href={`${invoiceAppUrl}?invoice=${invoice.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            textDecoration: 'none',
+            background: 'var(--purple-soft)',
+            color: 'var(--purple)',
+            padding: '8px 14px',
+            borderRadius: '10px',
+            fontWeight: 700,
+            fontSize: '13px',
+            marginBottom: '12px',
+          }}
+        >
+          View Invoice {invoice.invoice_number ? `(${invoice.invoice_number})` : ''} — $
+          {Number(invoice.total).toFixed(2)} · {invoice.payment_status}
+        </a>
+      )}
+
+      {estimates.length > 0 && (
+        <div>
+          <h4 style={{ margin: '0 0 8px 0' }}>Estimates</h4>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {estimates.map((estimate) => (
+              <div
+                key={estimate.id}
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>
+                    ${Number(estimate.amount).toFixed(2)}
+                  </p>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
+                </div>
+
+                {estimate.status === 'pending' ? (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <form action={approveEstimate}>
+                      <input type="hidden" name="estimate_id" value={estimate.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <button
+                        type="submit"
+                        style={{
+                          background: '#389e0d',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Approve
+                      </button>
+                    </form>
+                    <form action={rejectEstimate}>
+                      <input type="hidden" name="estimate_id" value={estimate.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <button
+                        type="submit"
+                        style={{
+                          background: 'none',
+                          border: '1px solid #b91c1c',
+                          color: '#b91c1c',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <span
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '999px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textTransform: 'capitalize',
+                      ...getEstimateStatusStyle(estimate.status),
+                    }}
+                  >
+                    {estimate.status}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      <div
+        style={{
+          background: '#fff',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: '20px',
+          boxShadow: 'var(--shadow)',
+          cursor: 'pointer',
+          transition: 'box-shadow 0.15s ease, transform 0.15s ease',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = 'var(--shadow-lg)')}
+        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'var(--shadow)')}
+        onClick={() => setExpanded(true)}
+      >
         <div
           style={{
             display: 'flex',
-            gap: '8px',
-            marginTop: '14px',
-            overflow: 'hidden',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '12px',
+            flexWrap: 'wrap',
           }}
         >
-          {[...beforePhotos, ...afterPhotos].slice(0, 4).map((photo) => (
-            <img
-              key={photo.id}
-              src={`${photo.url}?width=160`}
-              alt="Job photo preview"
-              loading="lazy"
+          <div>
+            <h2 style={{ margin: '0 0 4px 0' }}>{ticket.title}</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+              {ticket.unit_number || 'N/A'} ·{' '}
+              {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : ''}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
               style={{
-                width: '70px',
-                height: '70px',
-                objectFit: 'cover',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
+                padding: '8px 12px',
+                borderRadius: '999px',
+                fontSize: '13px',
+                fontWeight: 700,
+                textTransform: 'capitalize',
+                ...getStatusBadgeStyle(ticket.status),
               }}
-            />
-          ))}
+            >
+              {(ticket.status || 'new').replace('_', ' ')}
+            </span>
+            <span style={{ color: 'var(--purple)', fontWeight: 700, fontSize: '13px' }}>
+              View details ▼
+            </span>
+          </div>
         </div>
-      )}
+
+        {hasPhotos && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              marginTop: '14px',
+              overflow: 'hidden',
+            }}
+          >
+            {[...beforePhotos, ...afterPhotos].slice(0, 4).map((photo) => (
+              <img
+                key={photo.id}
+                src={`${photo.url}?width=160`}
+                alt="Job photo preview"
+                loading="lazy"
+                style={{
+                  width: '70px',
+                  height: '70px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {expanded && (
-        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: '16px' }}>
-          {ticket.summary_en && (
-            <p style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{ticket.summary_en}</p>
-          )}
-
-          {ticket.recommended_action && (
+        <div
+          onClick={() => setExpanded(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
             <div
               style={{
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                padding: '12px',
-                background: 'var(--purple-light)',
-                marginBottom: '12px',
-              }}
-            >
-              <strong>Recommended action:</strong> {ticket.recommended_action}
-            </div>
-          )}
-
-          {hasPhotos && (
-            <div
-              style={{
-                display: 'grid',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
                 gap: '12px',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                marginBottom: '12px',
+                flexWrap: 'wrap',
+                marginBottom: '16px',
               }}
             >
-              {beforePhotos.length > 0 && (
-                <div>
-                  <h4 style={{ margin: '0 0 6px 0' }}>Before</h4>
-                  <PhotoGallery photos={beforePhotos} />
-                </div>
-              )}
-              {afterPhotos.length > 0 && (
-                <div>
-                  <h4 style={{ margin: '0 0 6px 0' }}>After</h4>
-                  <PhotoGallery photos={afterPhotos} />
-                </div>
-              )}
-            </div>
-          )}
+              <div>
+                <h2 style={{ margin: '0 0 4px 0', fontSize: '24px' }}>{ticket.title}</h2>
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                  {ticket.unit_number || 'N/A'} ·{' '}
+                  {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : ''}
+                </p>
+              </div>
 
-          {invoice && invoiceAppUrl && (
-            <a
-              href={`${invoiceAppUrl}?invoice=${invoice.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-block',
-                textDecoration: 'none',
-                background: 'var(--purple-soft)',
-                color: 'var(--purple)',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '13px',
-                marginBottom: '12px',
-              }}
-            >
-              View Invoice {invoice.invoice_number ? `(${invoice.invoice_number})` : ''} — $
-              {Number(invoice.total).toFixed(2)} · {invoice.payment_status}
-            </a>
-          )}
-
-          {estimates.length > 0 && (
-            <div>
-              <h4 style={{ margin: '0 0 8px 0' }}>Estimates</h4>
-              <div style={{ display: 'grid', gap: '10px' }}>
-                {estimates.map((estimate) => (
-                  <div
-                    key={estimate.id}
-                    style={{
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      padding: '12px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '12px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div>
-                      <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>
-                        ${Number(estimate.amount).toFixed(2)}
-                      </p>
-                      <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
-                    </div>
-
-                    {estimate.status === 'pending' ? (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <form action={approveEstimate}>
-                          <input type="hidden" name="estimate_id" value={estimate.id} />
-                          <input type="hidden" name="token" value={token} />
-                          <button
-                            type="submit"
-                            style={{
-                              background: '#389e0d',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '8px 14px',
-                              borderRadius: '8px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Approve
-                          </button>
-                        </form>
-                        <form action={rejectEstimate}>
-                          <input type="hidden" name="estimate_id" value={estimate.id} />
-                          <input type="hidden" name="token" value={token} />
-                          <button
-                            type="submit"
-                            style={{
-                              background: 'none',
-                              border: '1px solid #b91c1c',
-                              color: '#b91c1c',
-                              padding: '8px 14px',
-                              borderRadius: '8px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Reject
-                          </button>
-                        </form>
-                      </div>
-                    ) : (
-                      <span
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '999px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          textTransform: 'capitalize',
-                          ...getEstimateStatusStyle(estimate.status),
-                        }}
-                      >
-                        {estimate.status}
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '999px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    textTransform: 'capitalize',
+                    ...getStatusBadgeStyle(ticket.status),
+                  }}
+                >
+                  {(ticket.status || 'new').replace('_', ' ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  style={{
+                    background: 'var(--purple-soft)',
+                    color: 'var(--purple)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Close ✕
+                </button>
               </div>
             </div>
-          )}
+
+            {detailContent}
+          </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

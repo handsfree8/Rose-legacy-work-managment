@@ -21,6 +21,7 @@ export async function updateTicket(formData: FormData) {
   const summaryEn = String(formData.get('summary_en') || '')
   const recommendedAction = String(formData.get('recommended_action') || '')
   const emergency = formData.get('emergency') === 'on'
+  const workPerformed = String(formData.get('work_performed') || '')
   const tenantName = String(formData.get('tenant_name') || '')
   const tenantPhone = String(formData.get('tenant_phone') || '')
   const tenantEmail = String(formData.get('tenant_email') || '')
@@ -42,6 +43,7 @@ export async function updateTicket(formData: FormData) {
       summary_en: summaryEn || null,
       recommended_action: recommendedAction || null,
       emergency,
+      work_performed: workPerformed || null,
       tenant_name: tenantName || null,
       tenant_phone: tenantPhone || null,
       tenant_email: tenantEmail || null,

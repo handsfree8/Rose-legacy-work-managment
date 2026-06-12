@@ -262,6 +262,25 @@ export default async function EditTicketPage({ params }: EditTicketPageProps) {
               Emergency
             </label>
 
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                Work Performed
+              </label>
+              <textarea
+                name="work_performed"
+                rows={3}
+                placeholder="Example: Replaced thermostat with a new Honeywell unit."
+                defaultValue={ticket.work_performed || ''}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
             <h2 style={{ marginBottom: 0 }}>Tenant Information</h2>
 
             <div

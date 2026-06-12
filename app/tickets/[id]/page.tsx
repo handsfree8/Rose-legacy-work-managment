@@ -375,6 +375,22 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
+            <h2>Work Performed</h2>
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '16px',
+                background: '#fff',
+              }}
+            >
+              <p style={{ margin: 0 }}>
+                {ticket.work_performed || 'Not documented yet. Add details in "Edit Ticket".'}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
             <h2>Job Photos</h2>
             <div
               style={{
