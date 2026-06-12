@@ -49,10 +49,22 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     : { data: [] }
 
   const { data: invoices } = ticketIds.length
-    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, ticket_id').in('ticket_id', ticketIds)
+    ? await supabase.from('invoices').select('*').in('ticket_id', ticketIds)
     : { data: [] }
 
-  const invoiceAppUrl = process.env.NEXT_PUBLIC_INVOICE_APP_URL
+  const invoiceIds = (invoices || []).map((inv) => inv.id)
+  const { data: invoiceItems } = invoiceIds.length
+    ? await supabase.from('invoice_items').select('*').in('invoice_id', invoiceIds).order('position', { ascending: true })
+    : { data: [] }
+
+  type InvoiceItemRow = { id: string; invoice_id: string; description: string; qty: number; unit_price: number; line_total: number; position: number }
+  const itemsByInvoice = new Map<string, InvoiceItemRow[]>()
+  for (const item of invoiceItems || []) {
+    const list = itemsByInvoice.get(item.invoice_id) || []
+    list.push(item)
+    itemsByInvoice.set(item.invoice_id, list)
+  }
+
   const photosByTicket = new Map<string, { id: string; url: string; photo_type: string }[]>()
   for (const photo of photos || []) {
     const list = photosByTicket.get(photo.ticket_id) || []
@@ -117,6 +129,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             const afterPhotos = ticketPhotos.filter((p) => p.photo_type === 'after')
             const ticketEstimates = estimatesByTicket.get(ticket.id) || []
             const invoice = invoiceByTicket.get(ticket.id)
+            const invoiceItemsForTicket = invoice ? itemsByInvoice.get(invoice.id) || [] : []
 
             return (
               <LandlordTicketCard
@@ -126,7 +139,8 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
                 afterPhotos={afterPhotos}
                 estimates={ticketEstimates}
                 invoice={invoice}
-                invoiceAppUrl={invoiceAppUrl}
+                invoiceItems={invoiceItemsForTicket}
+                property={property}
                 token={token}
               />
             )

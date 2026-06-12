@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import PhotoGallery from '@/app/components/PhotoGallery'
+import InvoicePreview from '@/app/components/InvoicePreview'
 import { approveEstimate, rejectEstimate } from './actions'
 
 const getStatusBadgeStyle = (status: string | null) => {
@@ -24,7 +25,25 @@ type Estimate = {
   description: string
   status: string
 }
-type Invoice = { id: string; invoice_number: string | null; total: number; payment_status: string }
+type InvoiceItem = { id: string; description: string; qty: number; unit_price: number; line_total: number }
+type Invoice = {
+  id: string
+  invoice_number: string | null
+  invoice_date: string | null
+  client_name: string | null
+  payment_method: string | null
+  terms: string | null
+  notes: string | null
+  warranty_disclaimer: string | null
+  tax_rate: number | null
+  discount_rate: number | null
+  subtotal: number | null
+  tax_amount: number | null
+  discount_amount: number | null
+  total: number
+  payment_status: string
+}
+type Property = { name: string; address: string | null; city: string | null; state: string | null }
 
 type LandlordTicketCardProps = {
   ticket: {
@@ -41,7 +60,8 @@ type LandlordTicketCardProps = {
   afterPhotos: Photo[]
   estimates: Estimate[]
   invoice?: Invoice
-  invoiceAppUrl?: string
+  invoiceItems?: InvoiceItem[]
+  property: Property
   token: string
 }
 
@@ -51,7 +71,8 @@ export default function LandlordTicketCard({
   afterPhotos,
   estimates,
   invoice,
-  invoiceAppUrl,
+  invoiceItems,
+  property,
   token,
 }: LandlordTicketCardProps) {
   const [expanded, setExpanded] = useState(false)
@@ -114,26 +135,8 @@ export default function LandlordTicketCard({
         </div>
       )}
 
-      {invoice && invoiceAppUrl && (
-        <a
-          href={`${invoiceAppUrl}?invoice=${invoice.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            textDecoration: 'none',
-            background: 'var(--purple-soft)',
-            color: 'var(--purple)',
-            padding: '8px 14px',
-            borderRadius: '10px',
-            fontWeight: 700,
-            fontSize: '13px',
-            marginBottom: '12px',
-          }}
-        >
-          View Invoice {invoice.invoice_number ? `(${invoice.invoice_number})` : ''} — $
-          {Number(invoice.total).toFixed(2)} · {invoice.payment_status}
-        </a>
+      {invoice && (
+        <InvoicePreview invoice={invoice} items={invoiceItems || []} property={property} />
       )}
 
       {estimates.length > 0 && (
