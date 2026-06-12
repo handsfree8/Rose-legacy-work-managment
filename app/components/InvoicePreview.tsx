@@ -159,10 +159,10 @@ export default function InvoicePreview({ invoice, items, property }: InvoicePrev
                 </div>
               </div>
 
-              <hr style={{ border: 'none', borderTop: '3px solid #6d28d9', margin: '12px 0 16px' }} />
+              <hr style={{ border: 'none', borderTop: '3px solid var(--purple)', margin: '12px 0 16px' }} />
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-                <h1 style={{ margin: 0, fontSize: '24px', color: '#6d28d9' }}>INVOICE</h1>
+                <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--purple)' }}>INVOICE</h1>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: '0 0 2px 0' }}>Invoice #: {invoice.invoice_number || ''}</p>
                   <p style={{ margin: 0 }}>
@@ -177,7 +177,7 @@ export default function InvoicePreview({ invoice, items, property }: InvoicePrev
 
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px' }}>
                 <thead>
-                  <tr style={{ background: '#6d28d9', color: '#fff', textAlign: 'left' }}>
+                  <tr style={{ background: 'var(--purple)', color: '#fff', textAlign: 'left' }}>
                     <th style={{ padding: '8px 10px' }}>Description</th>
                     <th style={{ padding: '8px 10px', textAlign: 'right' }}>Qty</th>
                     <th style={{ padding: '8px 10px', textAlign: 'right' }}>Unit Price</th>
@@ -210,7 +210,7 @@ export default function InvoicePreview({ invoice, items, property }: InvoicePrev
                     <span>Discount ({invoice.discount_rate || 0}%):</span>
                     <span>-${Number(invoice.discount_amount || 0).toFixed(2)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontWeight: 700, fontSize: '16px', color: '#6d28d9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontWeight: 700, fontSize: '16px', color: 'var(--purple)' }}>
                     <span>Total Amount Due:</span>
                     <span>${Number(invoice.total).toFixed(2)}</span>
                   </div>
