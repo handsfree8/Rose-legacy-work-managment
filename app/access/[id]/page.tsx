@@ -315,7 +315,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                         <div>
                           <h3 style={{ margin: '0 0 6px 0' }}>{ticket.title}</h3>
                           <p style={{ margin: '0 0 8px 0', color: 'var(--text-muted)' }}>
-                            Address: {ticket.reported_address || 'N/A'}
+                            Address: {ticket.unit_number || ticket.reported_address || 'N/A'}
                           </p>
                         </div>
 
