@@ -143,95 +143,101 @@ export default function InvoicePreview({ invoice, items, property }: InvoicePrev
               </div>
             </div>
 
-            <div className="invoice-print" style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="invoice-print" style={{ padding: '28px', fontFamily: 'Arial, Helvetica, sans-serif', color: '#1f2933' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
+                <img
+                  src="/logo.png"
+                  alt="Rose Legacy logo"
+                  style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                />
                 <div>
-                  <h2 style={{ margin: '0 0 4px 0' }}>Rose Legacy</h2>
-                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>Home Solutions</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Invoice {invoice.invoice_number || ''}</p>
-                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                    {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : ''}
+                  <h2 style={{ margin: '0 0 2px 0', fontSize: '18px' }}>Rose Legacy Home Solutions LLC</h2>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '13px' }}>HVAC Services | Overland Park, KS</p>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '13px' }}>
+                    Phone: 816 298 4828 | Email: appointments@roselegacyhvac.com
                   </p>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <p style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Billed to</p>
-                <p style={{ margin: 0 }}>{invoice.client_name || property.name}</p>
-                <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                  {property.address}, {property.city}, {property.state}
-                </p>
+              <hr style={{ border: 'none', borderTop: '3px solid #6d28d9', margin: '12px 0 16px' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+                <h1 style={{ margin: 0, fontSize: '24px', color: '#6d28d9' }}>INVOICE</h1>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ margin: '0 0 2px 0' }}>Invoice #: {invoice.invoice_number || ''}</p>
+                  <p style={{ margin: 0 }}>
+                    Date: {invoice.invoice_date ? invoice.invoice_date : ''}
+                  </p>
+                </div>
               </div>
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+              <p style={{ margin: '0 0 16px 0' }}>
+                <strong>Client:</strong> {invoice.client_name || property.name}
+              </p>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 4px' }}>Description</th>
-                    <th style={{ padding: '8px 4px', textAlign: 'right' }}>Qty</th>
-                    <th style={{ padding: '8px 4px', textAlign: 'right' }}>Unit Price</th>
-                    <th style={{ padding: '8px 4px', textAlign: 'right' }}>Total</th>
+                  <tr style={{ background: '#6d28d9', color: '#fff', textAlign: 'left' }}>
+                    <th style={{ padding: '8px 10px' }}>Description</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Qty</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Unit Price</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '8px 4px' }}>{item.description}</td>
-                      <td style={{ padding: '8px 4px', textAlign: 'right' }}>{item.qty}</td>
-                      <td style={{ padding: '8px 4px', textAlign: 'right' }}>${Number(item.unit_price).toFixed(2)}</td>
-                      <td style={{ padding: '8px 4px', textAlign: 'right' }}>${Number(item.line_total).toFixed(2)}</td>
+                    <tr key={item.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '8px 10px' }}>{item.description}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>{item.qty}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>${Number(item.unit_price).toFixed(2)}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>${Number(item.line_total).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                 <div style={{ width: '240px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                    <span>Subtotal</span>
+                    <span>Subtotal:</span>
                     <span>${Number(invoice.subtotal || 0).toFixed(2)}</span>
                   </div>
-                  {!!invoice.discount_amount && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                      <span>Discount {invoice.discount_rate ? `(${invoice.discount_rate}%)` : ''}</span>
-                      <span>-${Number(invoice.discount_amount).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {!!invoice.tax_amount && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                      <span>Tax {invoice.tax_rate ? `(${invoice.tax_rate}%)` : ''}</span>
-                      <span>${Number(invoice.tax_amount).toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '2px solid var(--border)', fontWeight: 700, fontSize: '16px' }}>
-                    <span>Total</span>
-                    <span>${Number(invoice.total).toFixed(2)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                    <span>Tax ({invoice.tax_rate || 0}%):</span>
+                    <span>${Number(invoice.tax_amount || 0).toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                    <span>Status</span>
-                    <span style={{ textTransform: 'capitalize' }}>{invoice.payment_status}</span>
+                    <span>Discount ({invoice.discount_rate || 0}%):</span>
+                    <span>-${Number(invoice.discount_amount || 0).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontWeight: 700, fontSize: '16px', color: '#6d28d9' }}>
+                    <span>Total Amount Due:</span>
+                    <span>${Number(invoice.total).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               {invoice.payment_method && (
-                <p style={{ marginTop: '20px' }}>
-                  <strong>Payment method:</strong> {invoice.payment_method}
+                <p style={{ margin: '0 0 4px 0' }}>
+                  <strong>Payment Method:</strong> {invoice.payment_method}
                 </p>
               )}
               {invoice.terms && (
-                <p>
+                <p style={{ margin: '0 0 12px 0' }}>
                   <strong>Terms:</strong> {invoice.terms}
                 </p>
               )}
-              {invoice.notes && (
-                <p>
-                  <strong>Notes:</strong> {invoice.notes}
-                </p>
-              )}
               {invoice.warranty_disclaimer && (
-                <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{invoice.warranty_disclaimer}</p>
+                <>
+                  <p style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Warranty Disclaimer:</p>
+                  <p style={{ margin: '0 0 12px 0' }}>{invoice.warranty_disclaimer}</p>
+                </>
+              )}
+              {invoice.notes && (
+                <>
+                  <p style={{ margin: '0 0 4px 0', fontWeight: 700 }}>Notes:</p>
+                  <p style={{ margin: 0 }}>{invoice.notes}</p>
+                </>
               )}
             </div>
           </div>
