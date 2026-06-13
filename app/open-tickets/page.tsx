@@ -19,7 +19,7 @@ export default async function OpenTicketsPage() {
   const { data: tickets } = await supabase
     .from('tickets')
     .select('id, title, status, priority, emergency, unit_number, created_at, property_id, properties(name)')
-    .not('status', 'in', '(resolved,closed)')
+    .not('status', 'in', '(resolved,closed,completed)')
     .order('created_at', { ascending: true })
 
   const allTickets = tickets || []
