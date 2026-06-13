@@ -79,6 +79,17 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
           >
             Properties
           </a>
+          <a
+            href="/open-tickets"
+            style={{
+              textDecoration: 'none',
+              color: 'var(--text)',
+              fontWeight: 600,
+              fontSize: '14px',
+            }}
+          >
+            Open Tickets
+          </a>
           {invoiceAppUrl && (
             <a
               href={invoiceAppUrl}
