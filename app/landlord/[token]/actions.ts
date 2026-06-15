@@ -18,7 +18,7 @@ async function decideEstimate(formData: FormData, status: 'approved' | 'rejected
 
   const { data: estimate } = await supabase
     .from('estimates')
-    .select('id, property_id, properties(landlord_token)')
+    .select('id, ticket_id, property_id, properties(landlord_token)')
     .eq('id', estimateId)
     .single()
 
@@ -34,6 +34,13 @@ async function decideEstimate(formData: FormData, status: 'approved' | 'rejected
 
   if (error) {
     throw new Error(error.message)
+  }
+
+  if (status === 'approved') {
+    await supabase
+      .from('tickets')
+      .update({ status: 'in_progress' })
+      .eq('id', estimate.ticket_id)
   }
 
   revalidatePath(`/landlord/${token}`)
