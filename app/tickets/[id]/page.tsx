@@ -490,6 +490,19 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                           ${Number(estimate.amount).toFixed(2)}
                         </p>
                         <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
+                        {estimate.landlord_comment && (
+                          <p
+                            style={{
+                              margin: '6px 0 0 0',
+                              padding: '8px 10px',
+                              background: 'var(--purple-light)',
+                              borderRadius: '8px',
+                              fontSize: '13px',
+                            }}
+                          >
+                            <strong>Landlord question:</strong> {estimate.landlord_comment}
+                          </p>
+                        )}
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

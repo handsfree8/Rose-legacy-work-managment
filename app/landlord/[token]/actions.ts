@@ -53,3 +53,38 @@ export async function approveEstimate(formData: FormData) {
 export async function rejectEstimate(formData: FormData) {
   await decideEstimate(formData, 'rejected')
 }
+
+export async function askEstimateQuestion(formData: FormData) {
+  const estimateId = String(formData.get('estimate_id') || '')
+  const token = String(formData.get('token') || '')
+  const comment = String(formData.get('comment') || '').trim()
+
+  if (!estimateId || !token) {
+    throw new Error('Missing estimate ID or token.')
+  }
+  if (!comment) {
+    throw new Error('Please enter your question.')
+  }
+
+  const { data: estimate } = await supabase
+    .from('estimates')
+    .select('id, property_id, properties(landlord_token)')
+    .eq('id', estimateId)
+    .single()
+
+  const property = estimate?.properties as unknown as { landlord_token: string } | null
+  if (!estimate || property?.landlord_token !== token) {
+    throw new Error('Not authorized.')
+  }
+
+  const { error } = await supabase
+    .from('estimates')
+    .update({ landlord_comment: comment })
+    .eq('id', estimateId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath(`/landlord/${token}`)
+}

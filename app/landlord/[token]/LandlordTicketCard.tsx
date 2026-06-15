@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import InvoicePreview from '@/app/components/InvoicePreview'
-import { approveEstimate, rejectEstimate } from './actions'
+import { approveEstimate, rejectEstimate, askEstimateQuestion } from './actions'
 
 const getStatusBadgeStyle = (status: string | null) => {
   const normalized = (status || '').toLowerCase()
@@ -24,6 +24,7 @@ type Estimate = {
   amount: number
   description: string
   status: string
+  landlord_comment?: string | null
 }
 type InvoiceItem = { id: string; description: string; qty: number; unit_price: number; line_total: number }
 type Invoice = {
@@ -76,6 +77,7 @@ export default function LandlordTicketCard({
   token,
 }: LandlordTicketCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [questionEstimateId, setQuestionEstimateId] = useState<string | null>(null)
   const hasPhotos = beforePhotos.length > 0 || afterPhotos.length > 0
 
   const detailContent = (
@@ -151,71 +153,151 @@ export default function LandlordTicketCard({
                   borderRadius: '10px',
                   padding: '12px',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '12px',
-                  flexWrap: 'wrap',
+                  flexDirection: 'column',
+                  gap: '10px',
                 }}
               >
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>
-                    ${Number(estimate.amount).toFixed(2)}
-                  </p>
-                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
-                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>
+                      ${Number(estimate.amount).toFixed(2)}
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>{estimate.description}</p>
+                  </div>
 
-                {estimate.status === 'pending' ? (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <form action={approveEstimate}>
-                      <input type="hidden" name="estimate_id" value={estimate.id} />
-                      <input type="hidden" name="token" value={token} />
+                  {estimate.status === 'pending' ? (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <form action={approveEstimate}>
+                        <input type="hidden" name="estimate_id" value={estimate.id} />
+                        <input type="hidden" name="token" value={token} />
+                        <button
+                          type="submit"
+                          style={{
+                            background: '#389e0d',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Approve
+                        </button>
+                      </form>
+                      <form action={rejectEstimate}>
+                        <input type="hidden" name="estimate_id" value={estimate.id} />
+                        <input type="hidden" name="token" value={token} />
+                        <button
+                          type="submit"
+                          style={{
+                            background: 'none',
+                            border: '1px solid #b91c1c',
+                            color: '#b91c1c',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </form>
                       <button
-                        type="submit"
-                        style={{
-                          background: '#389e0d',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '8px 14px',
-                          borderRadius: '8px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Approve
-                      </button>
-                    </form>
-                    <form action={rejectEstimate}>
-                      <input type="hidden" name="estimate_id" value={estimate.id} />
-                      <input type="hidden" name="token" value={token} />
-                      <button
-                        type="submit"
+                        type="button"
+                        onClick={() =>
+                          setQuestionEstimateId(questionEstimateId === estimate.id ? null : estimate.id)
+                        }
                         style={{
                           background: 'none',
-                          border: '1px solid #b91c1c',
-                          color: '#b91c1c',
+                          border: '1px solid var(--purple)',
+                          color: 'var(--purple)',
                           padding: '8px 14px',
                           borderRadius: '8px',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
-                        Reject
+                        {questionEstimateId === estimate.id ? 'Cancel' : 'I have questions'}
                       </button>
-                    </form>
-                  </div>
-                ) : (
-                  <span
+                    </div>
+                  ) : (
+                    <span
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        textTransform: 'capitalize',
+                        ...getEstimateStatusStyle(estimate.status),
+                      }}
+                    >
+                      {estimate.status}
+                    </span>
+                  )}
+                </div>
+
+                {estimate.landlord_comment && (
+                  <div
                     style={{
-                      padding: '6px 10px',
-                      borderRadius: '999px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      textTransform: 'capitalize',
-                      ...getEstimateStatusStyle(estimate.status),
+                      background: 'var(--purple-light)',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      fontSize: '13px',
                     }}
                   >
-                    {estimate.status}
-                  </span>
+                    <strong>Your question:</strong> {estimate.landlord_comment}
+                  </div>
+                )}
+
+                {questionEstimateId === estimate.id && (
+                  <form
+                    action={askEstimateQuestion}
+                    onSubmit={() => setQuestionEstimateId(null)}
+                    style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
+                  >
+                    <input type="hidden" name="estimate_id" value={estimate.id} />
+                    <input type="hidden" name="token" value={token} />
+                    <textarea
+                      name="comment"
+                      placeholder="Type your question or comment about this estimate..."
+                      rows={2}
+                      defaultValue={estimate.landlord_comment || ''}
+                      style={{
+                        flex: 1,
+                        minWidth: '200px',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '8px 10px',
+                        fontFamily: 'inherit',
+                        fontSize: '13px',
+                        resize: 'vertical',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        background: 'var(--purple)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      Send
+                    </button>
+                  </form>
                 )}
               </div>
             ))}

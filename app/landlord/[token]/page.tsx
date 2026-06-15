@@ -71,7 +71,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     list.push(photo)
     photosByTicket.set(photo.ticket_id, list)
   }
-  type EstimateRow = { id: string; amount: number; description: string; status: string; ticket_id: string }
+  type EstimateRow = { id: string; amount: number; description: string; status: string; ticket_id: string; landlord_comment: string | null }
   const estimatesByTicket = new Map<string, EstimateRow[]>()
   for (const estimate of estimates || []) {
     const list = estimatesByTicket.get(estimate.ticket_id) || []
