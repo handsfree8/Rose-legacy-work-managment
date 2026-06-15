@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { markTicketCompleted, createEstimate, deleteEstimate } from './actions'
+import { markTicketCompleted, createEstimate, deleteEstimate, toggleInvoicePaymentStatus } from './actions'
 import TicketPhotoUpload from '@/app/components/TicketPhotoUpload'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import SubmitButton from '@/app/components/SubmitButton'
@@ -42,7 +42,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
   const { data: existingInvoice } = await supabase
     .from('invoices')
-    .select('id, invoice_number')
+    .select('id, invoice_number, payment_status')
     .eq('ticket_id', ticket.id)
     .maybeSingle()
 
@@ -175,6 +175,28 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               >
                 View Invoice {existingInvoice.invoice_number ? `(${existingInvoice.invoice_number})` : ''}
               </a>
+            )}
+
+            {existingInvoice && (
+              <form action={toggleInvoicePaymentStatus}>
+                <input type="hidden" name="invoice_id" value={existingInvoice.id} />
+                <input type="hidden" name="ticket_id" value={ticket.id} />
+                <input type="hidden" name="current_status" value={existingInvoice.payment_status || 'pending'} />
+                <button
+                  type="submit"
+                  style={{
+                    background: existingInvoice.payment_status === 'paid' ? '#f6ffed' : '#fff7e6',
+                    color: existingInvoice.payment_status === 'paid' ? '#389e0d' : '#d46b08',
+                    border: existingInvoice.payment_status === 'paid' ? '1px solid #389e0d' : '1px solid #d46b08',
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {existingInvoice.payment_status === 'paid' ? '✓ Paid — Mark Pending' : 'Mark as Paid'}
+                </button>
+              </form>
             )}
 
             {isCompleted && invoiceAppUrl && !existingInvoice && (

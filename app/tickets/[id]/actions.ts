@@ -31,6 +31,29 @@ export async function markTicketCompleted(formData: FormData) {
   redirect(`/access/${propertyId}`)
 }
 
+export async function toggleInvoicePaymentStatus(formData: FormData) {
+  const invoiceId = String(formData.get('invoice_id') || '')
+  const ticketId = String(formData.get('ticket_id') || '')
+  const currentStatus = String(formData.get('current_status') || '')
+
+  if (!invoiceId || !ticketId) {
+    throw new Error('Missing invoice ID or ticket ID.')
+  }
+
+  const newStatus = currentStatus === 'paid' ? 'pending' : 'paid'
+
+  const { error } = await supabase
+    .from('invoices')
+    .update({ payment_status: newStatus })
+    .eq('id', invoiceId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath(`/tickets/${ticketId}`)
+}
+
 export async function createEstimate(formData: FormData) {
   const ticketId = String(formData.get('ticket_id') || '')
   const propertyId = String(formData.get('property_id') || '')
