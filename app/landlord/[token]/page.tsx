@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import LandlordTicketCard from './LandlordTicketCard'
+import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,6 +51,14 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
 
   const { data: invoices } = ticketIds.length
     ? await supabase.from('invoices').select('*').in('ticket_id', ticketIds)
+    : { data: [] }
+
+  // Find consolidated invoices referenced by any of this property's invoices
+  const consolidatedIds = [...new Set(
+    (invoices || []).map(inv => inv.consolidated_into).filter(Boolean)
+  )]
+  const { data: consolidatedInvoices } = consolidatedIds.length
+    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date').in('id', consolidatedIds)
     : { data: [] }
 
   const invoiceIds = (invoices || []).map((inv) => inv.id)
@@ -115,6 +124,12 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
         <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
           This is a read-only summary of work orders for your property. Click a work order to see more details.
         </p>
+
+        <ConsolidatedPaymentBanner
+          consolidatedInvoices={consolidatedInvoices || []}
+          originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
+          tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+        />
 
         {(!tickets || tickets.length === 0) && (
           <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>

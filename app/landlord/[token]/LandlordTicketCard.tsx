@@ -137,7 +137,31 @@ export default function LandlordTicketCard({
         </div>
       )}
 
-      {invoice && (
+      {invoice && invoice.payment_status === 'consolidated' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 16px',
+          background: 'var(--purple-light)',
+          borderRadius: '10px',
+          border: '1px solid var(--purple-soft)',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+          </svg>
+          <div>
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--purple)' }}>
+              Included in consolidated payment
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+              Invoice {invoice.invoice_number || '—'} · ${Number(invoice.total).toFixed(2)} · See payment request above
+            </p>
+          </div>
+        </div>
+      )}
+
+      {invoice && invoice.payment_status !== 'consolidated' && (
         <InvoicePreview invoice={invoice} items={invoiceItems || []} property={property} />
       )}
 
