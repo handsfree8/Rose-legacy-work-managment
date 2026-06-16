@@ -2,6 +2,111 @@
 
 import { useState } from 'react'
 
+async function downloadConsolidatedPDF(
+  inv: ConsolidatedInvoice,
+  covered: OriginalInvoice[],
+  tickets: Ticket[],
+  propertyName: string,
+) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+
+  const purple = [74, 32, 128] as [number, number, number]
+  const gray   = [120, 110, 140] as [number, number, number]
+  const black  = [26, 22, 37]   as [number, number, number]
+  const W = doc.internal.pageSize.getWidth()
+  const ticketMap = new Map(tickets.map(t => [t.id, t]))
+
+  // Header bar
+  doc.setFillColor(...purple)
+  doc.rect(0, 0, W, 80, 'F')
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.text('Rose Legacy Home Solutions', 40, 32)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.text('HVAC Services · Overland Park, KS', 40, 48)
+  doc.text('appointments@roselegacyhvac.com · 816 298 4828', 40, 62)
+
+  // Title
+  doc.setTextColor(...black)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.text('Consolidated Invoice', 40, 110)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(...gray)
+  doc.text(`Invoice ${inv.invoice_number || '—'}`, 40, 128)
+  doc.text(`Date: ${inv.invoice_date || new Date().toISOString().split('T')[0]}`, 40, 142)
+  doc.text(`Client: ${propertyName}`, 40, 156)
+  doc.text(`Status: ${inv.payment_status.toUpperCase()}`, 40, 170)
+
+  // Divider
+  doc.setDrawColor(...purple)
+  doc.setLineWidth(1.5)
+  doc.line(40, 186, W - 40, 186)
+
+  // Table header
+  doc.setFillColor(240, 234, 248)
+  doc.rect(40, 194, W - 80, 24, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...purple)
+  doc.text('WORK ORDER', 52, 210)
+  doc.text('INVOICE #', 320, 210)
+  doc.text('AMOUNT', W - 80, 210, { align: 'right' })
+
+  // Rows
+  let y = 236
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+
+  covered.forEach((orig, i) => {
+    const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
+    if (i % 2 === 0) {
+      doc.setFillColor(250, 248, 255)
+      doc.rect(40, y - 14, W - 80, 24, 'F')
+    }
+    doc.setTextColor(...black)
+    doc.text(ticket?.title || 'Work Order', 52, y, { maxWidth: 240 })
+    doc.setTextColor(...gray)
+    doc.text(orig.invoice_number || '—', 320, y)
+    doc.setTextColor(...purple)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`$${Number(orig.total).toFixed(2)}`, W - 40, y, { align: 'right' })
+    doc.setFont('helvetica', 'normal')
+    y += 28
+  })
+
+  // Total row
+  y += 8
+  doc.setDrawColor(...purple)
+  doc.setLineWidth(1)
+  doc.line(40, y, W - 40, y)
+  y += 20
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(...black)
+  doc.text('TOTAL DUE', 52, y)
+  doc.setTextColor(...purple)
+  doc.setFontSize(16)
+  doc.text(`$${Number(inv.total).toFixed(2)}`, W - 40, y, { align: 'right' })
+
+  // Footer
+  const pageH = doc.internal.pageSize.getHeight()
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...gray)
+  doc.text('Thank you for your business — Rose Legacy Home Solutions LLC', W / 2, pageH - 30, { align: 'center' })
+
+  doc.save(`consolidated-invoice-${inv.invoice_number || inv.id.slice(0, 8)}.pdf`)
+}
+
 type ConsolidatedInvoice = {
   id: string
   invoice_number: string | null
@@ -30,6 +135,7 @@ type Props = {
   consolidatedInvoices: ConsolidatedInvoice[]
   originalInvoices: OriginalInvoice[]
   tickets: Ticket[]
+  propertyName: string
 }
 
 function getStatusColors(status: string) {
@@ -38,8 +144,9 @@ function getStatusColors(status: string) {
   return { bg: '#fff7e6', border: '#ffd591', text: '#d46b08', dot: '#fa8c16' }
 }
 
-export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets }: Props) {
+export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   if (!consolidatedInvoices.length) return null
 
@@ -119,29 +226,58 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
                   ${Number(inv.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </div>
 
-                {inv.payment_link && !isPaid && (
-                  <a
-                    href={inv.payment_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {inv.payment_link && !isPaid && (
+                    <a
+                      href={inv.payment_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#fff',
+                        color: 'var(--purple)',
+                        padding: '12px 20px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                      Pay Now
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    disabled={downloadingId === inv.id}
+                    onClick={async () => {
+                      setDownloadingId(inv.id)
+                      const covered = originalInvoices.filter(o => o.consolidated_into === inv.id)
+                      await downloadConsolidatedPDF(inv, covered, tickets, propertyName)
+                      setDownloadingId(null)
+                    }}
                     style={{
-                      background: '#fff',
-                      color: 'var(--purple)',
-                      padding: '12px 20px',
+                      background: isPaid ? 'var(--purple)' : 'rgba(255,255,255,0.15)',
+                      color: isPaid ? '#fff' : '#fff',
+                      border: isPaid ? 'none' : '1px solid rgba(255,255,255,0.4)',
+                      padding: '12px 18px',
                       borderRadius: '10px',
                       fontWeight: 700,
                       fontSize: '14px',
-                      textDecoration: 'none',
+                      cursor: downloadingId === inv.id ? 'wait' : 'pointer',
                       whiteSpace: 'nowrap',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
                     }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                    Pay Now
-                  </a>
-                )}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    {downloadingId === inv.id ? 'Generating…' : 'Download PDF'}
+                  </button>
+                </div>
               </div>
             </div>
 

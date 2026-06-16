@@ -129,6 +129,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           consolidatedInvoices={consolidatedInvoices || []}
           originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
           tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+          propertyName={property.name}
         />
 
         {(!tickets || tickets.length === 0) && (
