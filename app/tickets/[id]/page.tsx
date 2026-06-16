@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { markTicketCompleted, createEstimate, deleteEstimate, toggleInvoicePaymentStatus } from './actions'
+import { markTicketCompleted, createEstimate, deleteEstimate, toggleInvoicePaymentStatus, toggleConsolidatedInvoiceStatus } from './actions'
 import TicketPhotoUpload from '@/app/components/TicketPhotoUpload'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import SubmitButton from '@/app/components/SubmitButton'
@@ -42,9 +42,17 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
 
   const { data: existingInvoice } = await supabase
     .from('invoices')
-    .select('id, invoice_number, payment_status')
+    .select('id, invoice_number, payment_status, consolidated_into')
     .eq('ticket_id', ticket.id)
     .maybeSingle()
+
+  const { data: consolidatedInvoice } = existingInvoice?.consolidated_into
+    ? await supabase
+        .from('invoices')
+        .select('id, invoice_number, total, payment_status')
+        .eq('id', existingInvoice.consolidated_into)
+        .single()
+    : { data: null }
 
   const { data: photos } = await supabase
     .from('ticket_photos')
@@ -135,6 +143,66 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               </p>
             )}
           </div>
+
+          {consolidatedInvoice && (
+            <div style={{
+              marginBottom: '16px',
+              border: `2px solid ${consolidatedInvoice.payment_status === 'paid' ? '#b7eb8f' : 'var(--purple)'}`,
+              borderRadius: '12px',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                background: consolidatedInvoice.payment_status === 'paid' ? '#f6ffed' : 'var(--purple)',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: consolidatedInvoice.payment_status === 'paid' ? '#389e0d' : 'rgba(255,255,255,0.7)' }}>
+                    Consolidated Invoice
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: '14px', fontWeight: 600, color: consolidatedInvoice.payment_status === 'paid' ? '#389e0d' : '#fff' }}>
+                    {consolidatedInvoice.invoice_number || 'INV'} · ${Number(consolidatedInvoice.total).toFixed(2)}
+                    <span style={{
+                      marginLeft: '10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      background: consolidatedInvoice.payment_status === 'paid' ? '#d9f7be' : 'rgba(255,255,255,0.15)',
+                      color: consolidatedInvoice.payment_status === 'paid' ? '#389e0d' : '#fff',
+                      padding: '2px 8px',
+                      borderRadius: '20px',
+                    }}>
+                      {consolidatedInvoice.payment_status}
+                    </span>
+                  </p>
+                </div>
+                <form action={toggleConsolidatedInvoiceStatus}>
+                  <input type="hidden" name="consolidated_id" value={consolidatedInvoice.id} />
+                  <input type="hidden" name="ticket_id" value={ticket.id} />
+                  <input type="hidden" name="current_status" value={consolidatedInvoice.payment_status} />
+                  <button
+                    type="submit"
+                    style={{
+                      background: consolidatedInvoice.payment_status === 'paid' ? 'var(--purple)' : '#fff',
+                      color: consolidatedInvoice.payment_status === 'paid' ? '#fff' : 'var(--purple)',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {consolidatedInvoice.payment_status === 'paid' ? '✓ Paid — Mark Pending' : 'Mark as Paid'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {!isCompleted && (
