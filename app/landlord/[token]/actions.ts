@@ -1,12 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 async function decideEstimate(formData: FormData, status: 'approved' | 'rejected') {
   const estimateId = String(formData.get('estimate_id') || '')

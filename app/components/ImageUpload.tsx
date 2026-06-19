@@ -1,12 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { uploadPropertyImage } from './photo-actions'
 
 type ImageUploadProps = {
   defaultValue?: string
@@ -24,27 +19,19 @@ export default function ImageUpload({ defaultValue = '' }: ImageUploadProps) {
     setUploading(true)
     setErrorMessage('')
 
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${fileExt}`
+    const fd = new FormData()
+    fd.append('file', file)
 
-    const { error } = await supabase.storage
-      .from('property_images')
-      .upload(fileName, file)
+    const { url, error } = await uploadPropertyImage(fd)
 
-    if (error) {
-      console.error('Upload error:', error.message)
-      setErrorMessage(error.message)
+    if (error || !url) {
+      console.error('Upload error:', error)
+      setErrorMessage(error || 'Upload failed')
       setUploading(false)
       return
     }
 
-    const { data } = supabase.storage
-      .from('property_images')
-      .getPublicUrl(fileName)
-
-    setImageUrl(data.publicUrl)
+    setImageUrl(url)
     setUploading(false)
   }
 

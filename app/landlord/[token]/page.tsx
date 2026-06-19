@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import LandlordTicketCard from './LandlordTicketCard'
 import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 type LandlordPageProps = {
   params: Promise<{ token: string }>

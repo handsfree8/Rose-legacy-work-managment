@@ -1,14 +1,10 @@
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { markTicketCompleted, createEstimate, deleteEstimate, toggleInvoicePaymentStatus, toggleConsolidatedInvoiceStatus } from './actions'
 import TicketPhotoUpload from '@/app/components/TicketPhotoUpload'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import SubmitButton from '@/app/components/SubmitButton'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 type TicketPageProps = {
   params: Promise<{ id: string }>

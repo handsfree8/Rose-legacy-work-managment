@@ -1,12 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 export async function createTicket(formData: FormData) {
   const propertyId = String(formData.get('property_id') || '')
