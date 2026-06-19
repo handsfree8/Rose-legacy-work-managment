@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { createBrowserSupabase } from '@/lib/supabase/browser'
 
 type SiteHeaderProps = {
   invoiceAppUrl?: string
@@ -8,9 +9,17 @@ type SiteHeaderProps = {
 
 export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
-  if (pathname?.startsWith('/landlord')) {
+  if (pathname?.startsWith('/landlord') || pathname === '/login') {
     return null
+  }
+
+  async function handleSignOut() {
+    const supabase = createBrowserSupabase()
+    await supabase.auth.signOut()
+    router.replace('/login')
+    router.refresh()
   }
 
   return (
@@ -108,6 +117,21 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
               Invoices ↗
             </a>
           )}
+          <button
+            onClick={handleSignOut}
+            style={{
+              border: '1px solid var(--border)',
+              background: '#fff',
+              color: 'var(--text-muted)',
+              fontWeight: 600,
+              fontSize: '13px',
+              padding: '8px 14px',
+              borderRadius: '999px',
+              cursor: 'pointer',
+            }}
+          >
+            Sign out
+          </button>
         </nav>
       </div>
     </header>
