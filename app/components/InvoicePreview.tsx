@@ -154,7 +154,7 @@ export default function InvoicePreview({ invoice, items, property }: InvoicePrev
                   <h2 style={{ margin: '0 0 2px 0', fontSize: '18px' }}>Rose Legacy Home Solutions LLC</h2>
                   <p style={{ margin: 0, color: '#6b7280', fontSize: '13px' }}>HVAC Services | Overland Park, KS</p>
                   <p style={{ margin: 0, color: '#6b7280', fontSize: '13px' }}>
-                    Phone: 816 298 4828 | Email: appointments@roselegacyhvac.com
+                    Phone: 816 298 4828 | Email: roselegacyhs@icloud.com
                   </p>
                 </div>
               </div>

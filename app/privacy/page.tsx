@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
         Rose Legacy Home Solutions LLC<br />
         Overland Park, KS<br />
         Phone: 816 298 4828<br />
-        Email: appointments@roselegacyhvac.com
+        Email: roselegacyhs@icloud.com
       </p>
     </main>
   )

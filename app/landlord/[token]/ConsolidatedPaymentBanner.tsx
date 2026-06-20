@@ -46,7 +46,7 @@ async function downloadConsolidatedPDF(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.text('HVAC Services | Overland Park, KS', tx, y + 14)
-  doc.text('Phone: 816 298 4828 | Email: appointments@roselegacyhvac.com', tx, y + 26)
+  doc.text('Phone: 816 298 4828 | Email: roselegacyhs@icloud.com', tx, y + 26)
   y += 46
 
   // Purple accent line
@@ -168,7 +168,7 @@ async function downloadConsolidatedPDF(
     doc.setTextColor(0, 0, 0)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    doc.text('Questions about this invoice? Call 816 298 4828 or email appointments@roselegacyhvac.com', left, footerY + 32)
+    doc.text('Questions about this invoice? Call 816 298 4828 or email roselegacyhs@icloud.com', left, footerY + 32)
   }
 
   doc.save(`consolidated-invoice-${inv.invoice_number || inv.id.slice(0, 8)}.pdf`)
