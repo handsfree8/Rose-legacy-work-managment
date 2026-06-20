@@ -1,5 +1,7 @@
+import { headers } from 'next/headers'
 import LandlordTicketCard from './LandlordTicketCard'
 import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
+import LandlordActions from './LandlordActions'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
@@ -101,40 +103,101 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     }
   }
 
+  // ── Summary stats for the report header ──
+  const DONE = new Set(['completed', 'closed', 'resolved'])
+  const allTickets = tickets || []
+  const completedCount = allTickets.filter(t => DONE.has((t.status || '').toLowerCase())).length
+  const activeCount = allTickets.length - completedCount
+
+  const paidTotal =
+    (invoices || []).filter(i => i.payment_status === 'paid').reduce((s, i) => s + Number(i.total || 0), 0) +
+    paidConsolidated.reduce((s, c) => s + Number(c.total || 0), 0)
+  const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+
+  // Active work orders first, then completed — each group newest-first (already ordered).
+  const sortedTickets = [...allTickets].sort((a, b) => {
+    const ad = DONE.has((a.status || '').toLowerCase()) ? 1 : 0
+    const bd = DONE.has((b.status || '').toLowerCase()) ? 1 : 0
+    return ad - bd
+  })
+
+  // Build the absolute portal URL (for the "Email report" / "Copy link" actions).
+  const h = await headers()
+  const host = h.get('x-forwarded-host') || h.get('host') || 'rose-legacy-work-management.vercel.app'
+  const proto = h.get('x-forwarded-proto') || 'https'
+  const portalUrl = `${proto}://${host}/landlord/${token}`
+
+  const stats = [
+    { label: 'Work Orders', value: String(allTickets.length), tone: 'var(--purple)' },
+    { label: 'In Progress', value: String(activeCount), tone: '#c9622a' },
+    { label: 'Completed', value: String(completedCount), tone: '#1e8e3e' },
+    { label: 'Total Paid', value: fmtUsd(paidTotal), tone: 'var(--purple)' },
+  ]
+
   return (
-    <main style={{ padding: '20px', background: 'var(--bg)', minHeight: '100vh' }}>
+    <main style={{ padding: '24px 20px 64px', background: 'var(--bg)', minHeight: '100vh' }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          main { background: #fff !important; padding: 0 !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+        {/* ── Hero header ── */}
         <div
           style={{
-            background: '#fff',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
+            background: 'linear-gradient(135deg, #4a2080 0%, #6b35b8 100%)',
+            borderRadius: '20px',
             padding: '28px',
-            boxShadow: 'var(--shadow)',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            flexWrap: 'wrap',
+            marginBottom: '16px',
+            color: '#fff',
+            boxShadow: '0 8px 30px rgba(74,32,128,0.25)',
           }}
         >
-          {property.photo_url && (
-            <img
-              src={`${property.photo_url}?width=400`}
-              alt={property.name}
-              style={{ width: '120px', height: '120px', borderRadius: '14px', objectFit: 'cover' }}
-            />
-          )}
-          <div>
-            <h1 style={{ margin: '0 0 6px 0', fontSize: '28px' }}>{property.name}</h1>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '16px' }}>
-              {property.address}, {property.city}, {property.state}
-            </p>
+          <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8, marginBottom: '14px' }}>
+            Rose Legacy Home Solutions · Property Report
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            {property.photo_url && (
+              <img
+                src={`${property.photo_url}?width=400`}
+                alt={property.name}
+                style={{ width: '110px', height: '110px', borderRadius: '16px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.25)' }}
+              />
+            )}
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <h1 style={{ margin: '0 0 6px 0', fontSize: '30px', lineHeight: 1.1 }}>{property.name}</h1>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '15px' }}>
+                {[property.address, property.city, property.state].filter(Boolean).join(', ')}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '20px' }}>
+            <LandlordActions portalUrl={portalUrl} propertyName={property.name} />
           </div>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
-          This is a read-only summary of work orders for your property. Click a work order to see more details.
+        {/* ── Stats strip ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: '12px',
+            marginBottom: '22px',
+          }}
+        >
+          {stats.map((s) => (
+            <div key={s.label} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px 18px', boxShadow: 'var(--shadow)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: s.tone, marginTop: '4px', lineHeight: 1.1 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '14px' }}>
+          A summary of work orders for your property. Click any work order to see photos and details.
         </p>
 
         <ConsolidatedPaymentBanner
@@ -151,7 +214,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
         )}
 
         <div style={{ display: 'grid', gap: '16px' }}>
-          {(tickets || []).map((ticket) => {
+          {sortedTickets.map((ticket) => {
             const ticketPhotos = photosByTicket.get(ticket.id) || []
             const beforePhotos = ticketPhotos.filter((p) => p.photo_type === 'before')
             const afterPhotos = ticketPhotos.filter((p) => p.photo_type === 'after')
