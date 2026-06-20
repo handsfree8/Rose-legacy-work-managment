@@ -134,6 +134,35 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     { label: 'Total Paid', value: fmtUsd(paidTotal), tone: 'var(--purple)' },
   ]
 
+  const activeTickets = sortedTickets.filter(t => !DONE.has((t.status || '').toLowerCase()))
+  const completedTickets = sortedTickets.filter(t => DONE.has((t.status || '').toLowerCase()))
+
+  const renderTicket = (ticket: (typeof allTickets)[number]) => {
+    const ticketPhotos = photosByTicket.get(ticket.id) || []
+    return (
+      <LandlordTicketCard
+        key={ticket.id}
+        ticket={ticket}
+        beforePhotos={ticketPhotos.filter((p) => p.photo_type === 'before')}
+        afterPhotos={ticketPhotos.filter((p) => p.photo_type === 'after')}
+        estimates={estimatesByTicket.get(ticket.id) || []}
+        invoice={invoiceByTicket.get(ticket.id)}
+        invoiceItems={invoiceByTicket.get(ticket.id) ? itemsByInvoice.get(invoiceByTicket.get(ticket.id)!.id) || [] : []}
+        property={property}
+        token={token}
+        paidInvoiceNumber={paidTicketTags.get(ticket.id) ?? null}
+      />
+    )
+  }
+
+  const SectionHeader = ({ label, count }: { label: string; count: number }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 2px 4px' }}>
+      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--purple-soft)', borderRadius: '999px', padding: '2px 9px' }}>{count}</span>
+      <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+    </div>
+  )
+
   return (
     <main style={{ padding: '24px 20px 64px', background: 'var(--bg)', minHeight: '100vh' }}>
       <style>{`
@@ -167,8 +196,10 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
               />
             )}
             <div style={{ flex: 1, minWidth: '220px' }}>
-              <h1 style={{ margin: '0 0 6px 0', fontSize: '30px', lineHeight: 1.1 }}>{property.name}</h1>
-              <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '15px' }}>
+              <h1 style={{ margin: '0 0 8px 0', fontSize: '36px', lineHeight: 1.05, color: '#fff', fontWeight: 800, letterSpacing: '-0.01em' }}>
+                {property.name}
+              </h1>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '15px' }}>
                 {[property.address, property.city, property.state].filter(Boolean).join(', ')}
               </p>
             </div>
@@ -213,31 +244,23 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: '16px' }}>
-          {sortedTickets.map((ticket) => {
-            const ticketPhotos = photosByTicket.get(ticket.id) || []
-            const beforePhotos = ticketPhotos.filter((p) => p.photo_type === 'before')
-            const afterPhotos = ticketPhotos.filter((p) => p.photo_type === 'after')
-            const ticketEstimates = estimatesByTicket.get(ticket.id) || []
-            const invoice = invoiceByTicket.get(ticket.id)
-            const invoiceItemsForTicket = invoice ? itemsByInvoice.get(invoice.id) || [] : []
+        {activeTickets.length > 0 && (
+          <>
+            <SectionHeader label="Active" count={activeTickets.length} />
+            <div style={{ display: 'grid', gap: '16px', marginBottom: '8px' }}>
+              {activeTickets.map(renderTicket)}
+            </div>
+          </>
+        )}
 
-            return (
-              <LandlordTicketCard
-                key={ticket.id}
-                ticket={ticket}
-                beforePhotos={beforePhotos}
-                afterPhotos={afterPhotos}
-                estimates={ticketEstimates}
-                invoice={invoice}
-                invoiceItems={invoiceItemsForTicket}
-                property={property}
-                token={token}
-                paidInvoiceNumber={paidTicketTags.get(ticket.id) ?? null}
-              />
-            )
-          })}
-        </div>
+        {completedTickets.length > 0 && (
+          <>
+            <SectionHeader label="Completed" count={completedTickets.length} />
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {completedTickets.map(renderTicket)}
+            </div>
+          </>
+        )}
 
         <ConsolidatedPaymentBanner
           consolidatedInvoices={paidConsolidated}

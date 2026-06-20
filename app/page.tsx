@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { headers } from 'next/headers'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
@@ -9,6 +10,10 @@ export default async function Home() {
     .from('properties')
     .select('*')
     .order('created_at', { ascending: true })
+
+  // Base URL for building per-property landlord portal links (Email / share).
+  const h = await headers()
+  const baseUrl = `${h.get('x-forwarded-proto') || 'https'}://${h.get('x-forwarded-host') || h.get('host') || 'rose-legacy-work-management.vercel.app'}`
 
   // Business pulse — counts for the KPI strip.
   const [openTickets, pendingEstimates, landlordQuestions, unpaidInvoices] = await Promise.all([
@@ -247,6 +252,26 @@ export default async function Home() {
                 </Link>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {p.landlord_token && (
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent(`Work Order Report — ${p.name}`)}&body=${encodeURIComponent(`Hello,\n\nHere is the live work order report for ${p.name} from Rose Legacy Home Solutions:\n\n${baseUrl}/landlord/${p.landlord_token}\n\nYou can review all work orders, photos, and payment history at the link above.\n\nThank you,\nRose Legacy Home Solutions`)}`}
+                      title="Email this property's portal link to the landlord"
+                      style={{
+                        textDecoration: 'none',
+                        color: 'var(--purple-mid)',
+                        height: '36px',
+                        width: '36px',
+                        borderRadius: '10px',
+                        background: 'var(--purple-soft)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+                    </a>
+                  )}
                   {p.landlord_token && (
                     <a
                       href={`/landlord/${p.landlord_token}`}
