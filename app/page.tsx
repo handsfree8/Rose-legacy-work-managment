@@ -199,13 +199,18 @@ export default async function Home() {
                         color: 'var(--gold, #b8860b)',
                         fontWeight: 700,
                         fontSize: '14px',
-                        padding: '8px 12px',
+                        lineHeight: 1,
+                        height: '36px',
+                        padding: '0 14px',
                         borderRadius: '10px',
                         background: '#fff7e6',
                         border: '1px solid #ffe1a8',
                         display: 'inline-flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '6px',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box',
                       }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -219,9 +224,16 @@ export default async function Home() {
                       color: 'var(--purple-mid)',
                       fontWeight: 700,
                       fontSize: '14px',
-                      padding: '8px 12px',
+                      lineHeight: 1,
+                      height: '36px',
+                      padding: '0 14px',
                       borderRadius: '10px',
                       background: 'var(--purple-soft)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      whiteSpace: 'nowrap',
+                      boxSizing: 'border-box',
                     }}
                   >
                     Manage
