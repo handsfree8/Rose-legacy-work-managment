@@ -359,7 +359,7 @@ export default function LandlordTicketCard({
           background: '#fff',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
-          padding: '20px',
+          padding: '14px 18px',
           boxShadow: 'var(--shadow)',
           cursor: 'pointer',
           transition: 'box-shadow 0.15s ease, transform 0.15s ease',
@@ -378,20 +378,20 @@ export default function LandlordTicketCard({
           }}
         >
           <div>
-            <h2 style={{ margin: '0 0 4px 0' }}>{ticket.title}</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+            <h2 style={{ margin: '0 0 3px 0', fontSize: '18px' }}>{ticket.title}</h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
               {ticket.unit_number || 'N/A'} ·{' '}
               {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : ''}
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {paidTag}
             <span
               style={{
-                padding: '8px 12px',
+                padding: '5px 11px',
                 borderRadius: '999px',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 700,
                 textTransform: 'capitalize',
                 ...getStatusBadgeStyle(ticket.status),
@@ -405,32 +405,39 @@ export default function LandlordTicketCard({
           </div>
         </div>
 
-        {hasPhotos && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              marginTop: '14px',
-              overflow: 'hidden',
-            }}
-          >
-            {[...beforePhotos, ...afterPhotos].slice(0, 4).map((photo) => (
-              <img
-                key={photo.id}
-                src={`${photo.url}?width=160`}
-                alt="Job photo preview"
-                loading="lazy"
-                style={{
-                  width: '70px',
-                  height: '70px',
-                  objectFit: 'cover',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {hasPhotos && (() => {
+          const allPhotos = [...beforePhotos, ...afterPhotos]
+          const MAX = 5
+          const shown = allPhotos.slice(0, MAX)
+          const extra = allPhotos.length - shown.length
+          return (
+            <div style={{ display: 'flex', gap: '6px', marginTop: '12px', overflow: 'hidden' }}>
+              {shown.map((photo, i) => {
+                const isLast = i === shown.length - 1 && extra > 0
+                return (
+                  <div key={photo.id} style={{ position: 'relative', width: '60px', height: '60px', flexShrink: 0 }}>
+                    <img
+                      src={`${photo.url}?width=160`}
+                      alt="Job photo preview"
+                      loading="lazy"
+                      style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)', display: 'block' }}
+                    />
+                    {isLast && (
+                      <div style={{
+                        position: 'absolute', inset: 0, borderRadius: '8px',
+                        background: 'rgba(26,22,37,0.62)', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: '15px',
+                      }}>
+                        +{extra}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
       </div>
 
       {expanded && (

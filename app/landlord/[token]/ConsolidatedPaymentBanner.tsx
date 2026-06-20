@@ -224,72 +224,86 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
 
   const ticketMap = new Map(tickets.map(t => [t.id, t]))
 
-  // Quiet "Payment history" render for already-settled consolidated payments.
+  // "Billing Summary" — settled consolidated payments with a visual breakdown bar.
   if (variant === 'history') {
+    const SEG = ['#4a2080', '#6b35b8', '#8a5cd0', '#a87fe0', '#c4a4ec', '#ddccf4']
     return (
-      <div style={{ marginTop: '32px', marginBottom: '8px' }}>
+      <div style={{ marginTop: '34px' }}>
         <div style={{
-          fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)',
-          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px',
+          fontSize: '13px', fontWeight: 800, color: 'var(--text)',
+          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px',
         }}>
-          Payment history
+          Billing Summary
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {consolidatedInvoices.map(inv => {
             const covered = originalInvoices.filter(o => o.consolidated_into === inv.id)
-            const isExpanded = expandedId === inv.id
+            const total = Number(inv.total) || covered.reduce((s, c) => s + Number(c.total || 0), 0) || 1
             return (
-              <div key={inv.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{
-                      fontSize: '11px', fontWeight: 700, color: '#389e0d', background: '#f6ffed',
-                      border: '1px solid #b7eb8f', borderRadius: '20px', padding: '3px 10px', whiteSpace: 'nowrap',
-                    }}>
-                      ✓ Paid
-                    </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                      Invoice {inv.invoice_number || '—'} · {inv.invoice_date || ''} · covers {covered.length} work order{covered.length !== 1 ? 's' : ''}
-                    </span>
+              <div key={inv.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px 22px', boxShadow: 'var(--shadow)' }}>
+                {/* top row */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#389e0d', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: '20px', padding: '3px 10px' }}>✓ Paid</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Invoice {inv.invoice_number || '—'} · {inv.invoice_date || ''}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                      Covers {covered.length} work order{covered.length !== 1 ? 's' : ''}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '15px' }}>
-                      ${Number(inv.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={downloadingId === inv.id}
-                      onClick={async () => {
-                        setDownloadingId(inv.id)
-                        await downloadConsolidatedPDF(inv, covered, tickets, propertyName)
-                        setDownloadingId(null)
-                      }}
-                      style={{ background: 'none', border: 'none', color: 'var(--purple)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
-                    >
-                      {downloadingId === inv.id ? 'Generating…' : 'Download PDF'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(isExpanded ? null : inv.id)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer' }}
-                    >
-                      {isExpanded ? 'Hide' : 'Details'}
-                    </button>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Paid</div>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--purple)', lineHeight: 1.1 }}>
+                      ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
                   </div>
                 </div>
-                {isExpanded && (
-                  <div style={{ borderTop: '1px solid var(--border)', padding: '8px 16px 14px' }}>
-                    {covered.map(orig => {
-                      const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
-                      return (
-                        <div key={orig.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>
-                          <span style={{ color: 'var(--text)' }}>{ticket?.title || 'Work Order'} <span style={{ color: 'var(--text-muted)' }}>· {orig.invoice_number || '—'}</span></span>
-                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>${Number(orig.total).toFixed(2)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+
+                {/* breakdown bar */}
+                <div style={{ display: 'flex', height: '14px', borderRadius: '999px', overflow: 'hidden', margin: '16px 0 14px', background: 'var(--purple-soft)' }}>
+                  {covered.map((orig, i) => (
+                    <div
+                      key={orig.id}
+                      title={`${(orig.ticket_id && ticketMap.get(orig.ticket_id)?.title) || 'Work Order'}: $${Number(orig.total).toFixed(2)}`}
+                      style={{ width: `${(Number(orig.total) / total) * 100}%`, background: SEG[i % SEG.length] }}
+                    />
+                  ))}
+                </div>
+
+                {/* legend */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px 18px' }}>
+                  {covered.map((orig, i) => {
+                    const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
+                    return (
+                      <div key={orig.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', padding: '3px 0' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: SEG[i % SEG.length], flexShrink: 0 }} />
+                        <span style={{ color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ticket?.title || 'Work Order'}
+                        </span>
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>${Number(orig.total).toFixed(2)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    disabled={downloadingId === inv.id}
+                    onClick={async () => {
+                      setDownloadingId(inv.id)
+                      await downloadConsolidatedPDF(inv, covered, tickets, propertyName)
+                      setDownloadingId(null)
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--purple-soft)', border: 'none', color: 'var(--purple)', fontWeight: 700, fontSize: '13px', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer' }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    {downloadingId === inv.id ? 'Generating…' : 'Download PDF'}
+                  </button>
+                </div>
               </div>
             )
           })}
