@@ -54,7 +54,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     (invoices || []).map(inv => inv.consolidated_into).filter(Boolean)
   )]
   const { data: consolidatedInvoices } = consolidatedIds.length
-    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date').in('id', consolidatedIds)
+    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date, payment_method, terms').in('id', consolidatedIds)
     : { data: [] }
 
   const invoiceIds = (invoices || []).map((inv) => inv.id)

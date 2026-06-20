@@ -2,6 +2,22 @@
 
 import { useState } from 'react'
 
+async function loadLogoDataUrl(): Promise<string | null> {
+  try {
+    const res = await fetch('/logo.png')
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
 async function downloadConsolidatedPDF(
   inv: ConsolidatedInvoice,
   covered: OriginalInvoice[],
@@ -9,100 +25,151 @@ async function downloadConsolidatedPDF(
   propertyName: string,
 ) {
   const { jsPDF } = await import('jspdf')
-  const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
 
-  const purple = [74, 32, 128] as [number, number, number]
-  const gray   = [120, 110, 140] as [number, number, number]
-  const black  = [26, 22, 37]   as [number, number, number]
-  const W = doc.internal.pageSize.getWidth()
+  const PURPLE: [number, number, number] = [74, 32, 128]
+  const left = 40, right = 555
   const ticketMap = new Map(tickets.map(t => [t.id, t]))
+  const money = (n: number) => `$${Number(n || 0).toFixed(2)}`
 
-  // Header bar
-  doc.setFillColor(...purple)
-  doc.rect(0, 0, W, 80, 'F')
-
-  doc.setTextColor(255, 255, 255)
+  // ── Header: logo + company (mirrors the single-invoice PDF) ──
+  const logo = await loadLogoDataUrl()
+  let y = 48
+  if (logo) {
+    try { doc.addImage(logo, 'PNG', left, y - 10, 42, 42) } catch { /* ignore bad image */ }
+  }
+  const tx = left + 58
+  doc.setTextColor(0, 0, 0)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.text('Rose Legacy Home Solutions', 40, 32)
-
+  doc.setFontSize(15)
+  doc.text('Rose Legacy Home Solutions LLC', tx, y)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.text('HVAC Services · Overland Park, KS', 40, 48)
-  doc.text('appointments@roselegacyhvac.com · 816 298 4828', 40, 62)
+  doc.text('HVAC Services | Overland Park, KS', tx, y + 14)
+  doc.text('Phone: 816 298 4828 | Email: appointments@roselegacyhvac.com', tx, y + 26)
+  y += 46
 
-  // Title
-  doc.setTextColor(...black)
+  // Purple accent line
+  doc.setDrawColor(...PURPLE)
+  doc.setLineWidth(1.5)
+  doc.line(left, y, right, y)
+  y += 34
+
+  // ── Title + meta ──
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text('Consolidated Invoice', 40, 110)
-
+  doc.setTextColor(...PURPLE)
+  doc.text('INVOICE', left, y)
+  doc.setTextColor(0, 0, 0)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(...gray)
-  doc.text(`Invoice ${inv.invoice_number || '—'}`, 40, 128)
-  doc.text(`Date: ${inv.invoice_date || new Date().toISOString().split('T')[0]}`, 40, 142)
-  doc.text(`Client: ${propertyName}`, 40, 156)
-  doc.text(`Status: ${inv.payment_status.toUpperCase()}`, 40, 170)
+  doc.setFontSize(11)
+  const dateStr = inv.invoice_date || new Date().toISOString().slice(0, 10)
+  doc.text(`Invoice #: ${inv.invoice_number || '—'}`, right - 175, y - 15)
+  doc.text(`Date: ${dateStr}`, right - 175, y + 1)
+  doc.text(`Status: ${(inv.payment_status || '').toUpperCase()}`, right - 175, y + 17)
+  y += 30
 
-  // Divider
-  doc.setDrawColor(...purple)
-  doc.setLineWidth(1.5)
-  doc.line(40, 186, W - 40, 186)
-
-  // Table header
-  doc.setFillColor(240, 234, 248)
-  doc.rect(40, 194, W - 80, 24, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...purple)
-  doc.text('WORK ORDER', 52, 210)
-  doc.text('INVOICE #', 320, 210)
-  doc.text('AMOUNT', W - 80, 210, { align: 'right' })
-
-  // Rows
-  let y = 236
+  doc.text('Client:', left, y)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-
-  covered.forEach((orig, i) => {
-    const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
-    if (i % 2 === 0) {
-      doc.setFillColor(250, 248, 255)
-      doc.rect(40, y - 14, W - 80, 24, 'F')
-    }
-    doc.setTextColor(...black)
-    doc.text(ticket?.title || 'Work Order', 52, y, { maxWidth: 240 })
-    doc.setTextColor(...gray)
-    doc.text(orig.invoice_number || '—', 320, y)
-    doc.setTextColor(...purple)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`$${Number(orig.total).toFixed(2)}`, W - 40, y, { align: 'right' })
-    doc.setFont('helvetica', 'normal')
-    y += 28
-  })
-
-  // Total row
+  doc.text(propertyName || '—', left + 44, y)
   y += 8
-  doc.setDrawColor(...purple)
-  doc.setLineWidth(1)
-  doc.line(40, y, W - 40, y)
-  y += 20
 
+  // ── Items table (purple header + grid), one row per covered work order ──
+  const colInvoiceX = 330
+  const tableTop = y + 8
+  const rowH = 26
+  const headH = 24
+
+  // header
+  doc.setFillColor(...PURPLE)
+  doc.rect(left, tableTop, right - left, headH, 'F')
+  doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
-  doc.setTextColor(...black)
-  doc.text('TOTAL DUE', 52, y)
-  doc.setTextColor(...purple)
-  doc.setFontSize(16)
-  doc.text(`$${Number(inv.total).toFixed(2)}`, W - 40, y, { align: 'right' })
+  doc.setFontSize(10)
+  doc.text('Work Order', left + 10, tableTop + 16)
+  doc.text('Invoice #', colInvoiceX, tableTop + 16)
+  doc.text('Amount', right - 10, tableTop + 16, { align: 'right' })
 
-  // Footer
-  const pageH = doc.internal.pageSize.getHeight()
+  // body
+  let ry = tableTop + headH
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(...gray)
-  doc.text('Thank you for your business — Rose Legacy Home Solutions LLC', W / 2, pageH - 30, { align: 'center' })
+  doc.setTextColor(0, 0, 0)
+  covered.forEach((orig) => {
+    const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
+    doc.setFontSize(10)
+    doc.text(ticket?.title || 'Work Order', left + 10, ry + 17, { maxWidth: colInvoiceX - left - 20 })
+    doc.setTextColor(110, 100, 130)
+    doc.text(orig.invoice_number || '—', colInvoiceX, ry + 17)
+    doc.setTextColor(0, 0, 0)
+    doc.text(money(Number(orig.total)), right - 10, ry + 17, { align: 'right' })
+    // row divider
+    doc.setDrawColor(225, 222, 235)
+    doc.setLineWidth(0.5)
+    doc.line(left, ry + rowH, right, ry + rowH)
+    ry += rowH
+  })
+  // outer border
+  doc.setDrawColor(225, 222, 235)
+  doc.setLineWidth(0.75)
+  doc.rect(left, tableTop, right - left, headH + covered.length * rowH)
+
+  // ── Totals ──
+  let endY = ry + 22
+  const labelX = right - 200
+  const total = Number(inv.total || 0)
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Subtotal:', labelX, endY)
+  doc.text(money(total), right, endY, { align: 'right' })
+  endY += 18
+  doc.setDrawColor(225, 225, 230)
+  doc.setLineWidth(0.75)
+  doc.line(labelX, endY - 11, right, endY - 11)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.setTextColor(...PURPLE)
+  doc.text('Total Amount Due:', labelX, endY)
+  doc.text(money(total), right, endY, { align: 'right' })
+  doc.setTextColor(0, 0, 0)
+  endY += 26
+
+  // ── Payment / terms ──
+  doc.setFontSize(10)
+  if (inv.payment_method) {
+    doc.setFont('helvetica', 'bold'); doc.text('Payment Method:', left, endY)
+    doc.setFont('helvetica', 'normal'); doc.text(inv.payment_method, left + 100, endY)
+    endY += 14
+  }
+  if (inv.terms) {
+    doc.setFont('helvetica', 'bold'); doc.text('Terms:', left, endY)
+    doc.setFont('helvetica', 'normal'); doc.text(inv.terms, left + 44, endY)
+    endY += 14
+  }
+  if (inv.notes) {
+    endY += 6
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Notes:', left, endY)
+    endY += 14
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5)
+    doc.splitTextToSize(inv.notes, right - left).forEach((line: string) => { doc.text(line, left, endY); endY += 13 })
+  }
+
+  // ── Footer anchored near the bottom ──
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const footerY = pageHeight - 70
+  if (endY < footerY) {
+    doc.setDrawColor(...PURPLE)
+    doc.setLineWidth(0.75)
+    doc.line(left, footerY, right, footerY)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...PURPLE)
+    doc.text('Thank you for choosing Rose Legacy Home Solutions LLC!', left, footerY + 18)
+    doc.setTextColor(0, 0, 0)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.text('Questions about this invoice? Call 816 298 4828 or email appointments@roselegacyhvac.com', left, footerY + 32)
+  }
 
   doc.save(`consolidated-invoice-${inv.invoice_number || inv.id.slice(0, 8)}.pdf`)
 }
@@ -115,6 +182,8 @@ type ConsolidatedInvoice = {
   payment_link: string | null
   notes: string | null
   invoice_date: string | null
+  payment_method?: string | null
+  terms?: string | null
 }
 
 type OriginalInvoice = {
