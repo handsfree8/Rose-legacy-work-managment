@@ -238,6 +238,18 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           propertyName={property.name}
         />
 
+        {paidConsolidated.length > 0 && (
+          <div style={{ marginBottom: '8px' }}>
+            <ConsolidatedPaymentBanner
+              consolidatedInvoices={paidConsolidated}
+              originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
+              tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+              propertyName={property.name}
+              variant="history"
+            />
+          </div>
+        )}
+
         {(!tickets || tickets.length === 0) && (
           <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             No work orders yet.
@@ -261,14 +273,6 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             </div>
           </>
         )}
-
-        <ConsolidatedPaymentBanner
-          consolidatedInvoices={paidConsolidated}
-          originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
-          tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
-          propertyName={property.name}
-          variant="history"
-        />
       </div>
     </main>
   )

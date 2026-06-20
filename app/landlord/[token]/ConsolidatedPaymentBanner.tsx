@@ -228,7 +228,7 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
   if (variant === 'history') {
     const SEG = ['#4a2080', '#6b35b8', '#8a5cd0', '#a87fe0', '#c4a4ec', '#ddccf4']
     return (
-      <div style={{ marginTop: '34px' }}>
+      <div style={{ marginTop: '4px', marginBottom: '20px' }}>
         <div style={{
           fontSize: '13px', fontWeight: 800, color: 'var(--text)',
           textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px',
