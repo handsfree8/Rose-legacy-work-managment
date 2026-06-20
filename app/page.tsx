@@ -187,20 +187,46 @@ export default async function Home() {
                   View Property →
                 </Link>
 
-                <Link
-                  href={`/properties/${p.id}/edit`}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'var(--purple-mid)',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    padding: '8px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--purple-soft)',
-                  }}
-                >
-                  Manage
-                </Link>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {p.landlord_token && (
+                    <a
+                      href={`/landlord/${p.landlord_token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open this property's landlord portal in a new tab"
+                      style={{
+                        textDecoration: 'none',
+                        color: 'var(--gold, #b8860b)',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        background: '#fff7e6',
+                        border: '1px solid #ffe1a8',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Landlord View
+                    </a>
+                  )}
+                  <Link
+                    href={`/properties/${p.id}/edit`}
+                    style={{
+                      textDecoration: 'none',
+                      color: 'var(--purple-mid)',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      background: 'var(--purple-soft)',
+                    }}
+                  >
+                    Manage
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
