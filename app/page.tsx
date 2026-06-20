@@ -2,11 +2,33 @@ import Link from 'next/link'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const { data: properties, error } = await supabase
     .from('properties')
     .select('*')
     .order('created_at', { ascending: true })
+
+  // Business pulse — counts for the KPI strip.
+  const [openTickets, pendingEstimates, landlordQuestions, unpaidInvoices] = await Promise.all([
+    supabase.from('tickets').select('id', { count: 'exact', head: true })
+      .not('status', 'in', '(resolved,closed,completed)'),
+    supabase.from('estimates').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('estimates').select('id', { count: 'exact', head: true }).not('landlord_comment', 'is', null),
+    supabase.from('invoices').select('total, payment_status').in('payment_status', ['pending', 'overdue']),
+  ])
+
+  const unpaidRows = unpaidInvoices.data || []
+  const unpaidTotal = unpaidRows.reduce((sum, r) => sum + Number(r.total || 0), 0)
+  const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+
+  const kpis = [
+    { label: 'Open Tickets', value: String(openTickets.count ?? 0), sub: 'need attention', href: '/open-tickets', tone: '#6b35b8' },
+    { label: 'Pending Estimates', value: String(pendingEstimates.count ?? 0), sub: 'awaiting landlord', href: '/open-tickets', tone: '#c9622a' },
+    { label: 'Landlord Questions', value: String(landlordQuestions.count ?? 0), sub: 'to respond', href: '/inbox', tone: '#e5484d' },
+    { label: 'Unpaid Invoices', value: String(unpaidRows.length), sub: unpaidTotal > 0 ? fmtUsd(unpaidTotal) + ' due' : 'all paid', href: '/open-tickets', tone: '#1e8e3e' },
+  ]
 
   return (
     <main
@@ -55,6 +77,43 @@ export default async function Home() {
           >
             Manage your properties and access maintenance activity in one place.
           </p>
+        </div>
+
+        {/* KPI STRIP — business pulse */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: '14px',
+            marginBottom: '40px',
+          }}
+        >
+          {kpis.map((k) => (
+            <Link
+              key={k.label}
+              href={k.href}
+              style={{
+                textDecoration: 'none',
+                background: '#fff',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                padding: '18px 20px',
+                boxShadow: 'var(--shadow)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                borderTop: `3px solid ${k.tone}`,
+              }}
+            >
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {k.label}
+              </span>
+              <span style={{ fontSize: '34px', fontWeight: 800, color: k.tone, lineHeight: 1.1 }}>
+                {k.value}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{k.sub}</span>
+            </Link>
+          ))}
         </div>
 
         {/* ERROR */}
