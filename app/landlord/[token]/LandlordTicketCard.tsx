@@ -64,6 +64,8 @@ type LandlordTicketCardProps = {
   invoiceItems?: InvoiceItem[]
   property: Property
   token: string
+  // Set when this work order is covered by an already-paid consolidated invoice.
+  paidInvoiceNumber?: string | null
 }
 
 export default function LandlordTicketCard({
@@ -75,10 +77,29 @@ export default function LandlordTicketCard({
   invoiceItems,
   property,
   token,
+  paidInvoiceNumber,
 }: LandlordTicketCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [questionEstimateId, setQuestionEstimateId] = useState<string | null>(null)
   const hasPhotos = beforePhotos.length > 0 || afterPhotos.length > 0
+
+  const paidTag = paidInvoiceNumber ? (
+    <span
+      title={`Covered by paid invoice ${paidInvoiceNumber}`}
+      style={{
+        padding: '6px 10px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: 700,
+        color: '#389e0d',
+        background: '#f6ffed',
+        border: '1px solid #b7eb8f',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      ✓ Paid · {paidInvoiceNumber}
+    </span>
+  ) : null
 
   const detailContent = (
     <>
@@ -364,7 +385,8 @@ export default function LandlordTicketCard({
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {paidTag}
             <span
               style={{
                 padding: '8px 12px',
@@ -456,7 +478,8 @@ export default function LandlordTicketCard({
                 </p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {paidTag}
                 <span
                   style={{
                     padding: '8px 12px',

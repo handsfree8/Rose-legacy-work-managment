@@ -136,6 +136,9 @@ type Props = {
   originalInvoices: OriginalInvoice[]
   tickets: Ticket[]
   propertyName: string
+  // 'request' = prominent payment request (unpaid). 'history' = quiet, demoted
+  // record of an already-settled consolidated payment, shown lower on the page.
+  variant?: 'request' | 'history'
 }
 
 function getStatusColors(status: string) {
@@ -144,13 +147,87 @@ function getStatusColors(status: string) {
   return { bg: '#fff7e6', border: '#ffd591', text: '#d46b08', dot: '#fa8c16' }
 }
 
-export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName }: Props) {
+export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName, variant = 'request' }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   if (!consolidatedInvoices.length) return null
 
   const ticketMap = new Map(tickets.map(t => [t.id, t]))
+
+  // Quiet "Payment history" render for already-settled consolidated payments.
+  if (variant === 'history') {
+    return (
+      <div style={{ marginTop: '32px', marginBottom: '8px' }}>
+        <div style={{
+          fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)',
+          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px',
+        }}>
+          Payment history
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {consolidatedInvoices.map(inv => {
+            const covered = originalInvoices.filter(o => o.consolidated_into === inv.id)
+            const isExpanded = expandedId === inv.id
+            return (
+              <div key={inv.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{
+                      fontSize: '11px', fontWeight: 700, color: '#389e0d', background: '#f6ffed',
+                      border: '1px solid #b7eb8f', borderRadius: '20px', padding: '3px 10px', whiteSpace: 'nowrap',
+                    }}>
+                      ✓ Paid
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                      Invoice {inv.invoice_number || '—'} · {inv.invoice_date || ''} · covers {covered.length} work order{covered.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '15px' }}>
+                      ${Number(inv.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={downloadingId === inv.id}
+                      onClick={async () => {
+                        setDownloadingId(inv.id)
+                        await downloadConsolidatedPDF(inv, covered, tickets, propertyName)
+                        setDownloadingId(null)
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--purple)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      {downloadingId === inv.id ? 'Generating…' : 'Download PDF'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : inv.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      {isExpanded ? 'Hide' : 'Details'}
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ borderTop: '1px solid var(--border)', padding: '8px 16px 14px' }}>
+                    {covered.map(orig => {
+                      const ticket = orig.ticket_id ? ticketMap.get(orig.ticket_id) : null
+                      return (
+                        <div key={orig.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>
+                          <span style={{ color: 'var(--text)' }}>{ticket?.title || 'Work Order'} <span style={{ color: 'var(--text-muted)' }}>· {orig.invoice_number || '—'}</span></span>
+                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>${Number(orig.total).toFixed(2)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '28px' }}>
