@@ -1,13 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { updateProperty, deleteProperty } from './actions'
 import ImageUpload from '@/app/components/ImageUpload'
 import DeletePropertyButton from './DeletePropertyButton'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 type EditPropertyPageProps = {
   params: Promise<{ id: string }>

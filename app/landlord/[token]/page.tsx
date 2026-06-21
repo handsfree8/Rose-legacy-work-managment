@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { headers } from 'next/headers'
 import LandlordTicketCard from './LandlordTicketCard'
 import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
+import LandlordActions from './LandlordActions'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 type LandlordPageProps = {
   params: Promise<{ token: string }>
@@ -58,7 +56,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     (invoices || []).map(inv => inv.consolidated_into).filter(Boolean)
   )]
   const { data: consolidatedInvoices } = consolidatedIds.length
-    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date').in('id', consolidatedIds)
+    ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date, payment_method, terms').in('id', consolidatedIds)
     : { data: [] }
 
   const invoiceIds = (invoices || []).map((inv) => inv.id)
@@ -89,48 +87,168 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   }
   const invoiceByTicket = new Map((invoices || []).map((inv) => [inv.ticket_id, inv]))
 
+  // Split consolidated invoices: unpaid stay prominent at top; paid become a quiet
+  // "Payment history" entry at the bottom so they don't look like a current balance.
+  const pendingConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status !== 'paid')
+  const paidConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status === 'paid')
+  const consolidatedById = new Map((consolidatedInvoices || []).map(c => [c.id, c]))
+
+  // Per-ticket "Paid · INV-xxx" tag for work orders covered by a settled consolidated payment.
+  const paidTicketTags = new Map<string, string>()
+  for (const inv of invoices || []) {
+    if (!inv.consolidated_into || !inv.ticket_id) continue
+    const parent = consolidatedById.get(inv.consolidated_into)
+    if (parent && parent.payment_status === 'paid') {
+      paidTicketTags.set(inv.ticket_id, parent.invoice_number || '')
+    }
+  }
+
+  // ── Summary stats for the report header ──
+  const DONE = new Set(['completed', 'closed', 'resolved'])
+  const allTickets = tickets || []
+  const completedCount = allTickets.filter(t => DONE.has((t.status || '').toLowerCase())).length
+  const activeCount = allTickets.length - completedCount
+
+  const paidTotal =
+    (invoices || []).filter(i => i.payment_status === 'paid').reduce((s, i) => s + Number(i.total || 0), 0) +
+    paidConsolidated.reduce((s, c) => s + Number(c.total || 0), 0)
+  const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+
+  // Active work orders first, then completed — each group newest-first (already ordered).
+  const sortedTickets = [...allTickets].sort((a, b) => {
+    const ad = DONE.has((a.status || '').toLowerCase()) ? 1 : 0
+    const bd = DONE.has((b.status || '').toLowerCase()) ? 1 : 0
+    return ad - bd
+  })
+
+  // Build the absolute portal URL (for the "Email report" / "Copy link" actions).
+  const h = await headers()
+  const host = h.get('x-forwarded-host') || h.get('host') || 'rose-legacy-work-management.vercel.app'
+  const proto = h.get('x-forwarded-proto') || 'https'
+  const portalUrl = `${proto}://${host}/landlord/${token}`
+
+  const stats = [
+    { label: 'Work Orders', value: String(allTickets.length), tone: 'var(--purple)' },
+    { label: 'In Progress', value: String(activeCount), tone: '#c9622a' },
+    { label: 'Completed', value: String(completedCount), tone: '#1e8e3e' },
+    { label: 'Total Paid', value: fmtUsd(paidTotal), tone: 'var(--purple)' },
+  ]
+
+  const activeTickets = sortedTickets.filter(t => !DONE.has((t.status || '').toLowerCase()))
+  const completedTickets = sortedTickets.filter(t => DONE.has((t.status || '').toLowerCase()))
+
+  const renderTicket = (ticket: (typeof allTickets)[number]) => {
+    const ticketPhotos = photosByTicket.get(ticket.id) || []
+    return (
+      <LandlordTicketCard
+        key={ticket.id}
+        ticket={ticket}
+        beforePhotos={ticketPhotos.filter((p) => p.photo_type === 'before')}
+        afterPhotos={ticketPhotos.filter((p) => p.photo_type === 'after')}
+        estimates={estimatesByTicket.get(ticket.id) || []}
+        invoice={invoiceByTicket.get(ticket.id)}
+        invoiceItems={invoiceByTicket.get(ticket.id) ? itemsByInvoice.get(invoiceByTicket.get(ticket.id)!.id) || [] : []}
+        property={property}
+        token={token}
+        paidInvoiceNumber={paidTicketTags.get(ticket.id) ?? null}
+      />
+    )
+  }
+
+  const SectionHeader = ({ label, count }: { label: string; count: number }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 2px 4px' }}>
+      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--purple-soft)', borderRadius: '999px', padding: '2px 9px' }}>{count}</span>
+      <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+    </div>
+  )
+
   return (
-    <main style={{ padding: '20px', background: 'var(--bg)', minHeight: '100vh' }}>
+    <main style={{ padding: '24px 20px 64px', background: 'var(--bg)', minHeight: '100vh' }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          main { background: #fff !important; padding: 0 !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+        {/* ── Hero header ── */}
         <div
           style={{
-            background: '#fff',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
+            background: 'linear-gradient(135deg, #4a2080 0%, #6b35b8 100%)',
+            borderRadius: '20px',
             padding: '28px',
-            boxShadow: 'var(--shadow)',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            flexWrap: 'wrap',
+            marginBottom: '16px',
+            color: '#fff',
+            boxShadow: '0 8px 30px rgba(74,32,128,0.25)',
           }}
         >
-          {property.photo_url && (
-            <img
-              src={`${property.photo_url}?width=400`}
-              alt={property.name}
-              style={{ width: '120px', height: '120px', borderRadius: '14px', objectFit: 'cover' }}
-            />
-          )}
-          <div>
-            <h1 style={{ margin: '0 0 6px 0', fontSize: '28px' }}>{property.name}</h1>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '16px' }}>
-              {property.address}, {property.city}, {property.state}
-            </p>
+          <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8, marginBottom: '14px' }}>
+            Rose Legacy Home Solutions · Property Report
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            {property.photo_url && (
+              <img
+                src={`${property.photo_url}?width=400`}
+                alt={property.name}
+                style={{ width: '110px', height: '110px', borderRadius: '16px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.25)' }}
+              />
+            )}
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <h1 style={{ margin: '0 0 8px 0', fontSize: '36px', lineHeight: 1.05, color: '#fff', fontWeight: 800, letterSpacing: '-0.01em' }}>
+                {property.name}
+              </h1>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '15px' }}>
+                {[property.address, property.city, property.state].filter(Boolean).join(', ')}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '20px' }}>
+            <LandlordActions portalUrl={portalUrl} propertyName={property.name} />
           </div>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
-          This is a read-only summary of work orders for your property. Click a work order to see more details.
+        {/* ── Stats strip ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: '12px',
+            marginBottom: '22px',
+          }}
+        >
+          {stats.map((s) => (
+            <div key={s.label} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px 18px', boxShadow: 'var(--shadow)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: s.tone, marginTop: '4px', lineHeight: 1.1 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '14px' }}>
+          A summary of work orders for your property. Click any work order to see photos and details.
         </p>
 
         <ConsolidatedPaymentBanner
-          consolidatedInvoices={consolidatedInvoices || []}
+          consolidatedInvoices={pendingConsolidated}
           originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
           tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
           propertyName={property.name}
         />
+
+        {paidConsolidated.length > 0 && (
+          <div style={{ marginBottom: '8px' }}>
+            <ConsolidatedPaymentBanner
+              consolidatedInvoices={paidConsolidated}
+              originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
+              tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+              propertyName={property.name}
+              variant="history"
+            />
+          </div>
+        )}
 
         {(!tickets || tickets.length === 0) && (
           <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
@@ -138,30 +256,23 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: '16px' }}>
-          {(tickets || []).map((ticket) => {
-            const ticketPhotos = photosByTicket.get(ticket.id) || []
-            const beforePhotos = ticketPhotos.filter((p) => p.photo_type === 'before')
-            const afterPhotos = ticketPhotos.filter((p) => p.photo_type === 'after')
-            const ticketEstimates = estimatesByTicket.get(ticket.id) || []
-            const invoice = invoiceByTicket.get(ticket.id)
-            const invoiceItemsForTicket = invoice ? itemsByInvoice.get(invoice.id) || [] : []
+        {activeTickets.length > 0 && (
+          <>
+            <SectionHeader label="Active" count={activeTickets.length} />
+            <div style={{ display: 'grid', gap: '16px', marginBottom: '8px' }}>
+              {activeTickets.map(renderTicket)}
+            </div>
+          </>
+        )}
 
-            return (
-              <LandlordTicketCard
-                key={ticket.id}
-                ticket={ticket}
-                beforePhotos={beforePhotos}
-                afterPhotos={afterPhotos}
-                estimates={ticketEstimates}
-                invoice={invoice}
-                invoiceItems={invoiceItemsForTicket}
-                property={property}
-                token={token}
-              />
-            )
-          })}
-        </div>
+        {completedTickets.length > 0 && (
+          <>
+            <SectionHeader label="Completed" count={completedTickets.length} />
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {completedTickets.map(renderTicket)}
+            </div>
+          </>
+        )}
       </div>
     </main>
   )

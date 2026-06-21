@@ -2,12 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { uploadTicketPhoto } from './photo-actions'
 
 const MAX_DIMENSION = 1600
 const JPEG_QUALITY = 0.75
@@ -55,25 +50,13 @@ export default function TicketPhotoUpload({ ticketId, photoType }: TicketPhotoUp
     for (const file of files) {
       try {
         const compressed = await compressImage(file)
-        const fileName = `${ticketId}/${photoType}-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2)}.jpg`
+        const fd = new FormData()
+        fd.append('file', compressed, `${photoType}.jpg`)
+        fd.append('ticket_id', ticketId)
+        fd.append('photo_type', photoType)
 
-        const { error: uploadError } = await supabase.storage
-          .from('property_images')
-          .upload(fileName, compressed, { contentType: 'image/jpeg' })
-
-        if (uploadError) throw uploadError
-
-        const { data } = supabase.storage.from('property_images').getPublicUrl(fileName)
-
-        const { error: insertError } = await supabase.from('ticket_photos').insert({
-          ticket_id: ticketId,
-          url: data.publicUrl,
-          photo_type: photoType,
-        })
-
-        if (insertError) throw insertError
+        const { error } = await uploadTicketPhoto(fd)
+        if (error) throw new Error(error)
       } catch (err) {
         console.error('Photo upload failed:', err)
         setErrorMessage(err instanceof Error ? err.message : 'Upload failed')

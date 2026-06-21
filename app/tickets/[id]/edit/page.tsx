@@ -1,13 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { updateTicket, deleteTicket } from './actions'
 import DeleteTicketButton from './DeleteTicketButton'
 import SubmitButton from '@/app/components/SubmitButton'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
 type EditTicketPageProps = {
   params: Promise<{ id: string }>

@@ -2,12 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-)
+import { deleteTicketPhoto } from './photo-actions'
 
 type PhotoGalleryProps = {
   photos: { id: string; url: string }[]
@@ -27,7 +22,7 @@ export default function PhotoGallery({ photos, emptyLabel = 'No photos yet.', ed
   const handleDelete = async (photoId: string) => {
     if (!confirm('Delete this photo?')) return
     setDeletingId(photoId)
-    const { error } = await supabase.from('ticket_photos').delete().eq('id', photoId)
+    const { error } = await deleteTicketPhoto(photoId)
     if (error) {
       console.error('Delete photo failed:', error)
       alert('Could not delete photo.')
