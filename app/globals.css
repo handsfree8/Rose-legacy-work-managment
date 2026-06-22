@@ -89,3 +89,27 @@ a {
 a:hover {
   opacity: 0.85;
 }
+
+/* ── Dashboard chart animations ──────────────────── */
+@keyframes kpiDonutDash { from { stroke-dasharray: 0 var(--kpi-circ); } }
+@keyframes kpiBarGrow   { from { transform: scaleY(0); } }
+@keyframes kpiBarFill   { from { transform: scaleX(0); } }
+@keyframes kpiFadeUp    { from { opacity: 0; transform: translateY(8px); } }
+
+.kpi-seg  { animation: kpiDonutDash 0.9s cubic-bezier(.25,.8,.3,1) both; }
+.kpi-bar  { transform-box: fill-box; transform-origin: bottom; animation: kpiBarGrow 0.7s cubic-bezier(.2,.85,.25,1) both; }
+.kpi-fill { transform-origin: left center; animation: kpiBarFill 0.8s cubic-bezier(.2,.85,.25,1) both; }
+.kpi-fade { animation: kpiFadeUp 0.45s ease both; }
+
+.kpi-card-lift { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.kpi-card-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+@media (max-width: 760px) {
+  .dashboard-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-seg, .kpi-bar, .kpi-fill, .kpi-fade { animation: none; }
+  .kpi-card-lift { transition: none; }
+  .kpi-card-lift:hover { transform: none; }
+}
