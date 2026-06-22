@@ -117,6 +117,22 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                Tenant phone (optional)
+              </label>
+              <input
+                name="tenant_phone"
+                placeholder="+15551234567"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                }}
+              />
+            </div>
+
             <ImageUpload />
 
             <button
