@@ -44,6 +44,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
   }
 
   const isProperties = pathname === '/' || pathname?.startsWith('/access') || pathname?.startsWith('/properties')
+  const isDashboard = pathname?.startsWith('/dashboard')
   const isOpenTickets = pathname?.startsWith('/open-tickets')
   const isNewTicket = pathname?.startsWith('/new-ticket')
 
@@ -112,6 +113,8 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <a href="/" style={navLink(!!isProperties)}>Properties</a>
+
+          <a href="/dashboard" style={navLink(!!isDashboard)}>Dashboard</a>
 
           <a href="/open-tickets" style={navLink(!!isOpenTickets)}>
             Open Tickets
