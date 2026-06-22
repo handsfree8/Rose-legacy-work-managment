@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-function getPropertyIdFromCode(code: string): string | null {
-  const map: Record<string, string> = {
-    [process.env.PROPERTY_CODE_TILIN_CREEK || '']:
-      process.env.PROPERTY_ID_TILIN_CREEK || '',
-    [process.env.PROPERTY_CODE_TILINA_MISHI || '']:
-      process.env.PROPERTY_ID_TILINA_MISHI || '',
-  }
+// Lazy-init: SUPABASE_SERVICE_ROLE_KEY is only needed when Twilio actually
+// calls this webhook, not at build time.
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
-  return map[code] || null
+async function getPropertyIdFromCode(code: string): Promise<string | null> {
+  if (!code) return null
+
+  const supabase = getSupabase()
+  const { data } = await supabase
+    .from('properties')
+    .select('id')
+    .eq('call_code', code)
+    .maybeSingle()
+
+  return data?.id || null
 }
 
 function xmlEscape(value: string) {
@@ -26,7 +38,7 @@ export async function POST(req: NextRequest) {
   const from = String(formData.get('From') || '')
   const callSid = String(formData.get('CallSid') || '')
 
-  const propertyId = getPropertyIdFromCode(digits)
+  const propertyId = await getPropertyIdFromCode(digits)
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   console.log('Gather received', {
