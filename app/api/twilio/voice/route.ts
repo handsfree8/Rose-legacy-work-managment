@@ -38,8 +38,8 @@ function gatherTwiml(baseUrl: string) {
   })
 }
 
-function recordTwiml(baseUrl: string, propertyId: string, referenceCode: string) {
-  const rawRecordUrl = `${baseUrl}/api/twilio/recording?propertyId=${propertyId}&referenceCode=${referenceCode}`
+function recordTwiml(baseUrl: string, propertyId: string, referenceCode: string, callerPhone: string) {
+  const rawRecordUrl = `${baseUrl}/api/twilio/recording?propertyId=${propertyId}&referenceCode=${referenceCode}&callerPhone=${encodeURIComponent(callerPhone)}`
   const recordUrl = xmlEscape(rawRecordUrl)
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (match) {
-        return recordTwiml(baseUrl, match.id, 'phone-match')
+        return recordTwiml(baseUrl, match.id, 'phone-match', from)
       }
     }
   } catch (error) {

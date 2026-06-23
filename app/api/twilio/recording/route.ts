@@ -21,10 +21,11 @@ export async function POST(req: NextRequest) {
 
     const propertyId = searchParams.get('propertyId')
     const referenceCode = searchParams.get('referenceCode')
+    const callerPhoneParam = searchParams.get('callerPhone') || ''
 
     const formData = await req.formData()
 
-    const from = String(formData.get('From') || '')
+    const from = String(formData.get('From') || '') || callerPhoneParam
     const called = String(formData.get('Called') || '')
     const recordingUrl = String(formData.get('RecordingUrl') || '')
     const recordingSid = String(formData.get('RecordingSid') || '')
@@ -154,6 +155,7 @@ export async function POST(req: NextRequest) {
         emergency: aiEmergency,
         unit_number: null,
         reported_address: reportedAddress,
+        tenant_phone: from || null,
         recommended_action: aiRecommendedAction,
         status: 'new',
       })

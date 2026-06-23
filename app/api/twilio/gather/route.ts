@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const rawRecordUrl = `${baseUrl}/api/twilio/recording?propertyId=${propertyId}&referenceCode=${digits}`
+  const rawRecordUrl = `${baseUrl}/api/twilio/recording?propertyId=${propertyId}&referenceCode=${digits}&callerPhone=${encodeURIComponent(from)}`
   const recordUrl = xmlEscape(rawRecordUrl)
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
