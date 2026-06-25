@@ -47,6 +47,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
   const isDashboard = pathname?.startsWith('/dashboard')
   const isOpenTickets = pathname?.startsWith('/open-tickets')
   const isNewTicket = pathname?.startsWith('/new-ticket')
+  const isUsers = pathname?.startsWith('/users')
 
   const navLink = (active: boolean): React.CSSProperties => ({
     textDecoration: 'none',
@@ -115,6 +116,8 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
           <a href="/" style={navLink(!!isProperties)}>Properties</a>
 
           <a href="/dashboard" style={navLink(!!isDashboard)}>Dashboard</a>
+
+          <a href="/users" style={navLink(!!isUsers)}>Users</a>
 
           <a href="/open-tickets" style={navLink(!!isOpenTickets)}>
             Open Tickets
