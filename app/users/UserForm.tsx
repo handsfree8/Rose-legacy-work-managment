@@ -3,15 +3,28 @@
 import { useActionState, useState } from 'react'
 import { createAppUser, type CreateUserResult } from './actions'
 
-type AccessGroupOption = { id: string; label: string }
+type PropertyOption = { id: string; label: string; assignedTo: string | null }
 
-export default function UserForm({ accessGroups }: { accessGroups: AccessGroupOption[] }) {
+export default function UserForm({ properties }: { properties: PropertyOption[] }) {
   const [role, setRole] = useState<'technician' | 'landlord'>('technician')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const [state, formAction, pending] = useActionState<CreateUserResult | null, FormData>(
     async (_prev, formData) => createAppUser(formData),
     null
   )
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const noProperties = properties.length === 0
+  const landlordBlocked = role === 'landlord' && (noProperties || selected.size === 0)
 
   const label: React.CSSProperties = {
     display: 'block',
@@ -74,19 +87,51 @@ export default function UserForm({ accessGroups }: { accessGroups: AccessGroupOp
       </div>
 
       {role === 'landlord' && (
-        <>
-          <label style={label}>Access group (landlord&apos;s properties)</label>
-          <select style={input} name="access_group_id" defaultValue="" required>
-            <option value="" disabled>
-              Select an access group…
-            </option>
-            {accessGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </>
+        <div style={{ marginBottom: '18px' }}>
+          <label style={label}>Assign properties</label>
+          {noProperties ? (
+            <p style={{ color: '#b0851f', fontWeight: 600, margin: 0, background: '#fdf3e3', borderRadius: '10px', padding: '12px' }}>
+              No properties exist yet. Create a property first, then you can assign a landlord to it.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {properties.map((p) => {
+                const checked = selected.has(p.id)
+                return (
+                  <label
+                    key={p.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      cursor: 'pointer',
+                      border: `1.5px solid ${checked ? 'var(--purple)' : 'var(--border)'}`,
+                      background: checked ? 'var(--purple-soft)' : '#fff',
+                      borderRadius: '10px',
+                      padding: '11px 12px',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="property_ids"
+                      value={p.id}
+                      checked={checked}
+                      onChange={() => toggle(p.id)}
+                    />
+                    <span style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>{p.label}</span>
+                      {p.assignedTo ? (
+                        <span style={{ color: '#b0851f', fontSize: '12px', marginLeft: '8px' }}>
+                          (currently: {p.assignedTo})
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {state && !state.ok && (
@@ -100,7 +145,7 @@ export default function UserForm({ accessGroups }: { accessGroups: AccessGroupOp
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || landlordBlocked}
         style={{
           width: '100%',
           background: 'var(--purple)',
@@ -110,8 +155,8 @@ export default function UserForm({ accessGroups }: { accessGroups: AccessGroupOp
           padding: '13px',
           border: 'none',
           borderRadius: '10px',
-          cursor: pending ? 'default' : 'pointer',
-          opacity: pending ? 0.7 : 1,
+          cursor: pending || landlordBlocked ? 'default' : 'pointer',
+          opacity: pending || landlordBlocked ? 0.55 : 1,
         }}
       >
         {pending ? 'Creating…' : 'Create account'}
