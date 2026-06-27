@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import PayByCardButton from './PayByCardButton'
+import { payByCard } from './payment-actions'
+import { surcharge } from '@/lib/surcharge'
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
@@ -221,6 +222,17 @@ function getStatusColors(status: string) {
 export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName, token, variant = 'request' }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [payingId, setPayingId] = useState<string | null>(null)
+  const [payError, setPayError] = useState<string | null>(null)
+
+  async function startPayByCard(invoiceId: string) {
+    setPayingId(invoiceId)
+    setPayError(null)
+    const result = await payByCard(invoiceId, token)
+    setPayingId(null)
+    if (result.error) setPayError(result.error)
+    else if (result.url) window.open(result.url, '_blank', 'noopener,noreferrer')
+  }
 
   if (!consolidatedInvoices.length) return null
 
@@ -413,7 +425,29 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
                     </a>
                   )}
                   {!inv.payment_link && !isPaid && (
-                    <PayByCardButton invoiceId={inv.id} total={Number(inv.total)} token={token} />
+                    <button
+                      type="button"
+                      disabled={payingId === inv.id}
+                      onClick={() => startPayByCard(inv.id)}
+                      style={{
+                        background: '#2f9e44',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: payingId === inv.id ? 'wait' : 'pointer',
+                        opacity: payingId === inv.id ? 0.7 : 1,
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                      {payingId === inv.id ? 'Opening…' : 'Pay by card'}
+                    </button>
                   )}
                   <button
                     type="button"
@@ -445,6 +479,29 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
                 </div>
               </div>
             </div>
+
+            {/* Card-fee disclosure (only when an unpaid invoice can be paid by card) */}
+            {!inv.payment_link && !isPaid && (
+              <div style={{ padding: '12px 24px 0' }}>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#9c6a16',
+                    background: '#fdf3e3',
+                    border: '1px solid #ffe2b0',
+                    borderRadius: '10px',
+                    padding: '8px 12px',
+                  }}
+                >
+                  Paying by credit/debit card adds a ${surcharge(Number(inv.total)).fee.toFixed(2)} processing fee
+                  (total ${surcharge(Number(inv.total)).gross.toFixed(2)}).
+                </div>
+                {payingId !== inv.id && payError ? (
+                  <div style={{ color: '#cf1322', fontSize: '13px', fontWeight: 600, marginTop: '6px' }}>{payError}</div>
+                ) : null}
+              </div>
+            )}
 
             {/* Breakdown toggle */}
             <div style={{ padding: '0 24px' }}>
