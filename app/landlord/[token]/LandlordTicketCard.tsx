@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import InvoicePreview from '@/app/components/InvoicePreview'
+import PayByCardButton from './PayByCardButton'
 import { approveEstimate, rejectEstimate, askEstimateQuestion } from './actions'
 
 const getStatusBadgeStyle = (status: string | null) => {
@@ -184,6 +185,10 @@ export default function LandlordTicketCard({
 
       {invoice && invoice.payment_status !== 'consolidated' && (
         <InvoicePreview invoice={invoice} items={invoiceItems || []} property={property} />
+      )}
+
+      {invoice && invoice.payment_status !== 'consolidated' && invoice.payment_status !== 'paid' && (
+        <PayByCardButton invoiceId={invoice.id} total={Number(invoice.total)} token={token} />
       )}
 
       {estimates.length > 0 && (

@@ -236,6 +236,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
           tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
           propertyName={property.name}
+          token={token}
         />
 
         {paidConsolidated.length > 0 && (
@@ -245,6 +246,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
               originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
               tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
               propertyName={property.name}
+              token={token}
               variant="history"
             />
           </div>

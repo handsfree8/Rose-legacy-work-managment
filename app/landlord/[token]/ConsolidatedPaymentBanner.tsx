@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import PayByCardButton from './PayByCardButton'
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
@@ -205,6 +206,7 @@ type Props = {
   originalInvoices: OriginalInvoice[]
   tickets: Ticket[]
   propertyName: string
+  token: string
   // 'request' = prominent payment request (unpaid). 'history' = quiet, demoted
   // record of an already-settled consolidated payment, shown lower on the page.
   variant?: 'request' | 'history'
@@ -216,7 +218,7 @@ function getStatusColors(status: string) {
   return { bg: '#fff7e6', border: '#ffd591', text: '#d46b08', dot: '#fa8c16' }
 }
 
-export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName, variant = 'request' }: Props) {
+export default function ConsolidatedPaymentBanner({ consolidatedInvoices, originalInvoices, tickets, propertyName, token, variant = 'request' }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
@@ -409,6 +411,9 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                       Pay Now
                     </a>
+                  )}
+                  {!inv.payment_link && !isPaid && (
+                    <PayByCardButton invoiceId={inv.id} total={Number(inv.total)} token={token} />
                   )}
                   <button
                     type="button"
