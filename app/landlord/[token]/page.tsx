@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import LandlordTicketCard from './LandlordTicketCard'
 import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
+import SingleInvoicePaymentBanner from './SingleInvoicePaymentBanner'
 import LandlordActions from './LandlordActions'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
@@ -92,6 +93,13 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const pendingConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status !== 'paid')
   const paidConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status === 'paid')
   const consolidatedById = new Map((consolidatedInvoices || []).map(c => [c.id, c]))
+
+  // Standalone unpaid invoices (one ticket, not part of a consolidation) — these
+  // get the same prominent "Payment Request" banner as consolidated ones.
+  const ticketTitleById = new Map((tickets || []).map(t => [t.id, t.title as string]))
+  const standaloneUnpaid = (invoices || []).filter(
+    (i) => !i.consolidated_into && i.ticket_id && (i.payment_status === 'pending' || i.payment_status === 'overdue')
+  )
 
   // Per-ticket "Paid · INV-xxx" tag for work orders covered by a settled consolidated payment.
   const paidTicketTags = new Map<string, string>()
@@ -238,6 +246,21 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           propertyName={property.name}
           token={token}
         />
+
+        {standaloneUnpaid.map((inv) => (
+          <SingleInvoicePaymentBanner
+            key={inv.id}
+            invoiceId={inv.id}
+            invoiceNumber={inv.invoice_number}
+            invoiceDate={inv.invoice_date}
+            total={Number(inv.total)}
+            paymentStatus={inv.payment_status}
+            paymentLink={inv.payment_link}
+            workOrderTitle={(inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order'}
+            items={(itemsByInvoice.get(inv.id) || []).map((it) => ({ id: it.id, description: it.description, line_total: it.line_total }))}
+            token={token}
+          />
+        ))}
 
         {paidConsolidated.length > 0 && (
           <div style={{ marginBottom: '8px' }}>
