@@ -100,6 +100,9 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const standaloneUnpaid = (invoices || []).filter(
     (i) => !i.consolidated_into && i.ticket_id && (i.payment_status === 'pending' || i.payment_status === 'overdue')
   )
+  const standalonePaid = (invoices || []).filter(
+    (i) => !i.consolidated_into && i.ticket_id && i.payment_status === 'paid'
+  )
 
   // Per-ticket "Paid · INV-xxx" tag for work orders covered by a settled consolidated payment.
   const paidTicketTags = new Map<string, string>()
@@ -262,16 +265,36 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           />
         ))}
 
-        {paidConsolidated.length > 0 && (
+        {(paidConsolidated.length > 0 || standalonePaid.length > 0) && (
           <div style={{ marginBottom: '8px' }}>
-            <ConsolidatedPaymentBanner
-              consolidatedInvoices={paidConsolidated}
-              originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
-              tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
-              propertyName={property.name}
-              token={token}
-              variant="history"
-            />
+            <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+              Billing Summary
+            </div>
+            {standalonePaid.map((inv) => (
+              <SingleInvoicePaymentBanner
+                key={inv.id}
+                invoiceId={inv.id}
+                invoiceNumber={inv.invoice_number}
+                invoiceDate={inv.invoice_date}
+                total={Number(inv.total)}
+                paymentStatus={inv.payment_status}
+                paymentLink={inv.payment_link}
+                workOrderTitle={(inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order'}
+                items={(itemsByInvoice.get(inv.id) || []).map((it) => ({ id: it.id, description: it.description, line_total: it.line_total }))}
+                token={token}
+                variant="paid"
+              />
+            ))}
+            {paidConsolidated.length > 0 && (
+              <ConsolidatedPaymentBanner
+                consolidatedInvoices={paidConsolidated}
+                originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
+                tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+                propertyName={property.name}
+                token={token}
+                variant="history"
+              />
+            )}
           </div>
         )}
 

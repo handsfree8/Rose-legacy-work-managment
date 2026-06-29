@@ -243,12 +243,6 @@ export default function ConsolidatedPaymentBanner({ consolidatedInvoices, origin
     const SEG = ['#4a2080', '#6b35b8', '#8a5cd0', '#a87fe0', '#c4a4ec', '#ddccf4']
     return (
       <div style={{ marginTop: '4px', marginBottom: '20px' }}>
-        <div style={{
-          fontSize: '13px', fontWeight: 800, color: 'var(--text)',
-          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px',
-        }}>
-          Billing Summary
-        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {consolidatedInvoices.map(inv => {
             const covered = originalInvoices.filter(o => o.consolidated_into === inv.id)

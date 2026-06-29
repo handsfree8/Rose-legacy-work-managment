@@ -16,6 +16,7 @@ type Props = {
   workOrderTitle: string
   items: LineItem[]
   token: string
+  variant?: 'request' | 'paid'
 }
 
 export default function SingleInvoicePaymentBanner({
@@ -28,12 +29,39 @@ export default function SingleInvoicePaymentBanner({
   workOrderTitle,
   items,
   token,
+  variant = 'request',
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { gross, fee } = surcharge(total)
   const isOverdue = paymentStatus === 'overdue'
+
+  // Paid invoices show a quiet green "Billing Summary" card instead of the
+  // prominent purple payment request.
+  if (variant === 'paid') {
+    return (
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px 22px', boxShadow: 'var(--shadow)', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#389e0d', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: '20px', padding: '3px 10px' }}>✓ Paid</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                Invoice {invoiceNumber || '—'}{invoiceDate ? ` · ${invoiceDate}` : ''}
+              </span>
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Payment for: {workOrderTitle}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Paid</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--purple)', lineHeight: 1.1 }}>
+              ${Number(total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   async function startPay() {
     setBusy(true)
