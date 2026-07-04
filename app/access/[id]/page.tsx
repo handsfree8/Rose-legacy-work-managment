@@ -53,6 +53,13 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     .eq('property_id', id)
     .in('status', ['completed', 'closed'])
 
+  const { count: pendingEstimatesCount } = await supabase
+    .from('estimates')
+    .select('*', { count: 'exact', head: true })
+    .eq('property_id', id)
+    .is('ticket_id', null)
+    .eq('status', 'pending')
+
   const { data: recentTickets, error: recentTicketsError } = await supabase
     .from('tickets')
     .select('*')
@@ -254,6 +261,26 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
               <p style={{ fontSize: '34px', fontWeight: 700, margin: 0 }}>{completedTicketsCount ?? 0}</p>
             </div>
           </Link>
+
+          <div
+            style={{
+              background: (pendingEstimatesCount ?? 0) > 0 ? 'linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%)' : '#fff',
+              border: (pendingEstimatesCount ?? 0) > 0 ? '2px solid var(--purple)' : '1px solid var(--border)',
+              borderRadius: '14px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: '10px', color: '#555' }}>Pending Estimates</h3>
+            <p style={{ fontSize: '34px', fontWeight: 700, margin: 0, color: (pendingEstimatesCount ?? 0) > 0 ? 'var(--purple)' : 'inherit' }}>
+              {pendingEstimatesCount ?? 0}
+            </p>
+            {(pendingEstimatesCount ?? 0) > 0 && (
+              <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: 'var(--purple)', fontWeight: 600 }}>
+                Awaiting landlord approval
+              </p>
+            )}
+          </div>
         </div>
 
         <div
