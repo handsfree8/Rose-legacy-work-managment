@@ -84,11 +84,13 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     return { background: '#f5f5f5', color: 'var(--text)' }
   }
 
+  const invoiceAppUrl = process.env.NEXT_PUBLIC_INVOICE_APP_URL || 'https://invoice-2-0-two.vercel.app'
+
   return (
     <main
       style={{
         padding: '20px',
-        
+
         background: 'var(--bg)',
         minHeight: '100vh',
       }}
@@ -115,19 +117,38 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             ← Back to properties
           </Link>
 
-          <Link
-            href={`/access/${id}/new-ticket`}
-            style={{
-              textDecoration: 'none',
-              background: 'var(--purple)',
-              color: '#fff',
-              padding: '10px 16px',
-              borderRadius: '10px',
-              fontWeight: 700,
-            }}
-          >
-            + New Ticket
-          </Link>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <a
+              href={`${invoiceAppUrl}?property=${id}&mode=estimate`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                textDecoration: 'none',
+                background: '#fff',
+                color: 'var(--purple)',
+                border: '2px solid var(--purple)',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontWeight: 700,
+              }}
+            >
+              + New Estimate
+            </a>
+
+            <Link
+              href={`/access/${id}/new-ticket`}
+              style={{
+                textDecoration: 'none',
+                background: 'var(--purple)',
+                color: '#fff',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                fontWeight: 700,
+              }}
+            >
+              + New Ticket
+            </Link>
+          </div>
         </div>
 
         <div
