@@ -3,6 +3,7 @@ import LandlordTicketCard from './LandlordTicketCard'
 import ConsolidatedPaymentBanner from './ConsolidatedPaymentBanner'
 import SingleInvoicePaymentBanner from './SingleInvoicePaymentBanner'
 import LandlordActions from './LandlordActions'
+import StandaloneEstimateCard from './StandaloneEstimateCard'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
@@ -47,6 +48,13 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const { data: estimates } = ticketIds.length
     ? await supabase.from('estimates').select('*').in('ticket_id', ticketIds).order('created_at', { ascending: false })
     : { data: [] }
+
+  const { data: standaloneEstimates } = await supabase
+    .from('estimates')
+    .select('*')
+    .eq('property_id', property.id)
+    .is('ticket_id', null)
+    .order('created_at', { ascending: false })
 
   const { data: invoices } = ticketIds.length
     ? await supabase.from('invoices').select('*').in('ticket_id', ticketIds)
@@ -295,6 +303,18 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
                 variant="history"
               />
             )}
+          </div>
+        )}
+
+        {/* ── Standalone estimates (not linked to a ticket) ── */}
+        {standaloneEstimates && standaloneEstimates.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <SectionHeader label="Estimates Awaiting Approval" count={standaloneEstimates.filter(e => e.status === 'pending').length || standaloneEstimates.length} />
+            <div style={{ display: 'grid', gap: '16px', marginTop: '8px' }}>
+              {standaloneEstimates.map((est) => (
+                <StandaloneEstimateCard key={est.id} estimate={est} token={token} />
+              ))}
+            </div>
           </div>
         )}
 
