@@ -12,6 +12,8 @@ export async function updateProperty(formData: FormData) {
   const city = formData.get('city')?.toString().trim() || ''
   const state = formData.get('state')?.toString().trim() || ''
   const photo_url = formData.get('photo_url')?.toString().trim() || ''
+  const client_email = formData.get('client_email')?.toString().trim().toLowerCase() || null
+  const client_name = formData.get('client_name')?.toString().trim() || null
 
   const { error } = await supabase
     .from('properties')
@@ -21,6 +23,8 @@ export async function updateProperty(formData: FormData) {
       city,
       state,
       photo_url,
+      client_email,
+      client_name,
     })
     .eq('id', id)
 

@@ -130,6 +130,38 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
             >
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                  Client name <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(for invoices)</span>
+                </label>
+                <input
+                  name="client_name"
+                  defaultValue={property.client_name || ''}
+                  placeholder="e.g. Katherine Smith"
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
+                  Client email <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(for receipts)</span>
+                </label>
+                <input
+                  name="client_email"
+                  type="email"
+                  defaultValue={property.client_email || ''}
+                  placeholder="client@example.com"
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)' }}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              }}
+            >
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>
                   City
                 </label>
                 <input

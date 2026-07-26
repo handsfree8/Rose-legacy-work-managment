@@ -27,6 +27,8 @@ export async function createProperty(formData: FormData) {
   const state = formData.get('state')?.toString().trim() || ''
   const photo_url = formData.get('photo_url')?.toString().trim() || ''
   const tenant_phone = formData.get('tenant_phone')?.toString().trim() || null
+  const client_email = formData.get('client_email')?.toString().trim().toLowerCase() || null
+  const client_name = formData.get('client_name')?.toString().trim() || null
 
   const call_code = await generateUniqueCallCode()
 
@@ -38,6 +40,8 @@ export async function createProperty(formData: FormData) {
     photo_url,
     call_code,
     tenant_phone,
+    client_email,
+    client_name,
   })
 
   if (error) {
