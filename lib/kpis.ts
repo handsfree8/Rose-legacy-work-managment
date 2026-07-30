@@ -1,6 +1,35 @@
 // Pure aggregation helpers for the analytics dashboard.
 // Kept free of Supabase/React so they can be reasoned about and tested in isolation.
 
+// ── Profit / Revenue types ──────────────────────────────────────────────────
+export type InvoiceRow = {
+  id: string
+  total: number | string | null
+  payment_status: string | null
+  invoice_date: string | null
+  created_at: string | null
+  ticket_id: string | null
+  payment_method: string | null
+}
+
+export type MonthProfit = {
+  key: string          // "2026-07"
+  label: string        // "Jul"
+  fullLabel: string    // "Jul 2026"
+  revenue: number      // sum of paid invoices
+  invoiceCount: number
+  pending: number      // pending + overdue total
+}
+
+export type ProfitSummary = {
+  ytdRevenue: number
+  bestMonth: MonthProfit | null
+  avgMonthly: number
+  pendingReceivable: number
+  totalCollected: number
+  months: MonthProfit[]
+}
+
 export type TicketRow = {
   id: string
   title: string | null
@@ -95,6 +124,63 @@ export function topProperties(tickets: TicketRow[], limit = 5): PropertyRank[] {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit)
+}
+
+export function profitByMonth(invoices: InvoiceRow[], months = 12, now = new Date()): ProfitSummary {
+  const revenueByMonth = new Map<string, number>()
+  const countByMonth = new Map<string, number>()
+  const pendingByMonth = new Map<string, number>()
+
+  for (const inv of invoices) {
+    const dateStr = inv.invoice_date || inv.created_at
+    if (!dateStr) continue
+    const d = new Date(dateStr)
+    if (Number.isNaN(d.getTime())) continue
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const amount = Number(inv.total || 0)
+    if (inv.payment_status === 'paid') {
+      revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + amount)
+      countByMonth.set(key, (countByMonth.get(key) || 0) + 1)
+    } else if (inv.payment_status === 'pending' || inv.payment_status === 'overdue') {
+      pendingByMonth.set(key, (pendingByMonth.get(key) || 0) + amount)
+    }
+  }
+
+  const out: MonthProfit[] = []
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    out.push({
+      key,
+      label: d.toLocaleDateString('en-US', { month: 'short' }),
+      fullLabel: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      revenue: revenueByMonth.get(key) || 0,
+      invoiceCount: countByMonth.get(key) || 0,
+      pending: pendingByMonth.get(key) || 0,
+    })
+  }
+
+  const currentYear = now.getFullYear()
+  const ytdRevenue = invoices
+    .filter((inv) => {
+      const ds = inv.invoice_date || inv.created_at
+      return ds && new Date(ds).getFullYear() === currentYear && inv.payment_status === 'paid'
+    })
+    .reduce((s, inv) => s + Number(inv.total || 0), 0)
+
+  const pendingReceivable = invoices
+    .filter((inv) => inv.payment_status === 'pending' || inv.payment_status === 'overdue')
+    .reduce((s, inv) => s + Number(inv.total || 0), 0)
+
+  const totalCollected = invoices
+    .filter((inv) => inv.payment_status === 'paid')
+    .reduce((s, inv) => s + Number(inv.total || 0), 0)
+
+  const activeMonths = out.filter((m) => m.revenue > 0)
+  const avgMonthly = activeMonths.length > 0 ? totalCollected / activeMonths.length : 0
+  const bestMonth = activeMonths.length > 0 ? activeMonths.reduce((a, b) => (b.revenue > a.revenue ? b : a)) : null
+
+  return { ytdRevenue, bestMonth, avgMonthly, pendingReceivable, totalCollected, months: out }
 }
 
 export function recentTickets(tickets: TicketRow[], limit = 6): RecentTicket[] {
