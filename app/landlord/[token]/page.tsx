@@ -56,9 +56,19 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     .is('ticket_id', null)
     .order('created_at', { ascending: false })
 
-  const { data: invoices } = ticketIds.length
-    ? await supabase.from('invoices').select('*').in('ticket_id', ticketIds)
-    : { data: [] }
+  const [invoicesResult, standaloneInvoicesResult] = await Promise.all([
+    ticketIds.length
+      ? supabase.from('invoices').select('*').in('ticket_id', ticketIds)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from('invoices')
+      .select('*')
+      .eq('property_id', property.id)
+      .is('ticket_id', null)
+      .order('invoice_date', { ascending: false }),
+  ])
+  const invoices = invoicesResult.data
+  const standaloneInvoices = (standaloneInvoicesResult.data || []) as typeof invoices
 
   // Find consolidated invoices referenced by any of this property's invoices
   const consolidatedIds = [...new Set(
@@ -68,7 +78,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     ? await supabase.from('invoices').select('id, invoice_number, total, payment_status, payment_link, notes, invoice_date, payment_method, terms').in('id', consolidatedIds)
     : { data: [] }
 
-  const invoiceIds = (invoices || []).map((inv) => inv.id)
+  const invoiceIds = [...(invoices || []), ...(standaloneInvoices || [])].map(inv => inv.id)
   const { data: invoiceItems } = invoiceIds.length
     ? await supabase.from('invoice_items').select('*').in('invoice_id', invoiceIds).order('position', { ascending: true })
     : { data: [] }
@@ -249,6 +259,49 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
         <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '14px' }}>
           A summary of work orders for your property. Click any work order to see photos and details.
         </p>
+
+        {/* ── Standalone invoices (no ticket, billed directly to property) ── */}
+        {standaloneInvoices && standaloneInvoices.length > 0 && (() => {
+          const unpaid = standaloneInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'overdue')
+          const paid = standaloneInvoices.filter(i => i.payment_status === 'paid')
+          return (
+            <>
+              {unpaid.map(inv => (
+                <SingleInvoicePaymentBanner
+                  key={inv.id}
+                  invoiceId={inv.id}
+                  invoiceNumber={inv.invoice_number}
+                  invoiceDate={inv.invoice_date}
+                  total={Number(inv.total)}
+                  paymentStatus={inv.payment_status}
+                  paymentLink={inv.payment_link}
+                  workOrderTitle={inv.client_name || 'Service Invoice'}
+                  items={(itemsByInvoice.get(inv.id) || []).map(it => ({ id: it.id, description: it.description, line_total: it.line_total }))}
+                  token={token}
+                />
+              ))}
+              {paid.length > 0 && (
+                <div style={{ marginBottom: '8px' }}>
+                  {paid.map(inv => (
+                    <SingleInvoicePaymentBanner
+                      key={inv.id}
+                      invoiceId={inv.id}
+                      invoiceNumber={inv.invoice_number}
+                      invoiceDate={inv.invoice_date}
+                      total={Number(inv.total)}
+                      paymentStatus={inv.payment_status}
+                      paymentLink={inv.payment_link}
+                      workOrderTitle={inv.client_name || 'Service Invoice'}
+                      items={(itemsByInvoice.get(inv.id) || []).map(it => ({ id: it.id, description: it.description, line_total: it.line_total }))}
+                      token={token}
+                      variant="paid"
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )
+        })()}
 
         <ConsolidatedPaymentBanner
           consolidatedInvoices={pendingConsolidated}
