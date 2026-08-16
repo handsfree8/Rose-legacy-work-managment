@@ -142,23 +142,16 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const proto = h.get('x-forwarded-proto') || 'https'
   const portalUrl = `${proto}://${host}/landlord/${token}`
 
-  // All invoices that need payment (shown in right panel)
   const hasAnyPending = standaloneUnpaid.length > 0 || pendingConsolidated.length > 0 ||
     (standaloneInvoices || []).some(i => i.payment_status === 'pending' || i.payment_status === 'overdue')
 
-  // Compact paid invoice rows for history panel (no amounts shown)
+  // Compact paid rows for history (title + inv number + date — no amounts)
   const paidHistoryItems: { id: string; title: string; invoiceNumber: string | null; date: string | null }[] = [
     ...standalonePaid.map(inv => ({
       id: inv.id,
       title: (inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order',
       invoiceNumber: inv.invoice_number,
       date: inv.invoice_date,
-    })),
-    ...paidConsolidated.map(c => ({
-      id: c.id,
-      title: `Consolidated · ${c.invoice_number || ''}`,
-      invoiceNumber: c.invoice_number,
-      date: c.invoice_date,
     })),
     ...(standaloneInvoices || []).filter(i => i.payment_status === 'paid').map(inv => ({
       id: inv.id,
@@ -193,242 +186,272 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const completedTickets = sortedTickets.filter(t => DONE.has((t.status || '').toLowerCase()))
 
   return (
-    <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+    <main style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          .lp-body { display: block !important; }
+          .lp-shell { flex-direction: column !important; }
           .lp-sidebar, .lp-action { display: none !important; }
         }
-        /* 3-column layout */
-        .lp-body {
-          display: grid;
-          grid-template-columns: 200px 1fr 300px;
-          min-height: calc(100vh - 140px);
-          align-items: start;
+
+        /* ── Layout shell ── */
+        .lp-shell {
+          display: flex;
+          flex: 1;
+          align-items: stretch;
+          min-height: 0;
         }
-        /* Tablet */
+
+        /* ── Sidebar ── */
+        .lp-sidebar {
+          width: 210px;
+          flex-shrink: 0;
+          background: #4a2080;
+          display: flex;
+          flex-direction: column;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+        }
+
+        /* ── Feed (center) ── */
+        .lp-feed {
+          flex: 1;
+          min-width: 0;
+          padding: 24px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          overflow-y: auto;
+        }
+
+        /* ── Action panel (right) ── */
+        .lp-action {
+          width: 360px;
+          flex-shrink: 0;
+          border-left: 1px solid var(--border);
+          background: var(--card, #fff);
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+        }
+
+        /* ── Section headers ── */
+        .lp-sec {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--text-muted, #7a756c);
+          margin: 4px 0 8px;
+        }
+        .lp-sec::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: var(--border, #e3e0da);
+        }
+        .lp-badge {
+          display: inline-flex;
+          align-items: center;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 99px;
+          white-space: nowrap;
+        }
+
+        /* ── History rows ── */
+        .lp-hist {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--border, #e3e0da);
+        }
+        .lp-hist:last-child { border-bottom: none; }
+
+        /* ── All-clear ── */
+        .lp-ok {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #ebf7ef;
+          border: 1px solid rgba(30,142,62,.18);
+          border-radius: 10px;
+          padding: 12px 14px;
+          font-size: 13px;
+          color: #1e8e3e;
+          font-weight: 600;
+        }
+
+        /* ── Tablet: sidebar becomes top strip, action panel full-width below feed ── */
         @media (max-width: 960px) {
-          .lp-body {
-            grid-template-columns: 1fr 280px;
-            grid-template-rows: auto auto;
-          }
+          .lp-shell { flex-direction: column; }
           .lp-sidebar {
-            grid-column: 1 / -1;
-            flex-direction: row !important;
-            padding: 12px 16px !important;
+            width: 100%;
+            height: auto;
+            position: static;
+            flex-direction: row;
+            padding: 12px 16px;
+            gap: 0;
+            overflow-x: auto;
           }
-          .lp-sidebar-items {
-            flex-direction: row !important;
-            gap: 0 !important;
-            flex: 1;
-          }
+          .lp-sidebar-items { flex-direction: row !important; }
           .lp-sidebar-item {
             border-bottom: none !important;
-            border-right: 1px solid rgba(255,255,255,0.12) !important;
-            padding: 8px 20px !important;
+            border-right: 1px solid rgba(255,255,255,.12) !important;
+            padding: 6px 20px !important;
             flex: 1;
           }
           .lp-sidebar-item:last-child { border-right: none !important; }
           .lp-sidebar-val { font-size: 22px !important; }
-          .lp-sidebar-btns { flex-direction: row !important; border-top: none !important; padding-top: 0 !important; }
-        }
-        /* Mobile */
-        @media (max-width: 640px) {
-          .lp-body {
-            grid-template-columns: 1fr;
-          }
-          .lp-sidebar {
-            flex-direction: column !important;
-            padding: 16px !important;
-          }
-          .lp-sidebar-items {
-            flex-direction: row !important;
-            gap: 0 !important;
-          }
-          .lp-sidebar-item {
-            border-right: 1px solid rgba(255,255,255,0.12) !important;
-            border-bottom: none !important;
-            padding: 8px 12px !important;
-            flex: 1;
-          }
-          .lp-sidebar-item:last-child { border-right: none !important; }
           .lp-sidebar-btns {
             flex-direction: row !important;
-            border-top: 1px solid rgba(255,255,255,0.12) !important;
-            padding-top: 12px !important;
-            margin-top: 12px !important;
-            gap: 8px;
+            border-top: none !important;
+            padding-top: 0 !important;
+            border-left: 1px solid rgba(255,255,255,.12);
+            padding-left: 16px !important;
+            padding: 6px 0 6px 16px !important;
+            flex-shrink: 0;
           }
           .lp-action {
-            border-left: none !important;
-            border-top: 1px solid var(--border) !important;
+            width: 100%;
+            height: auto;
+            position: static;
+            border-left: none;
+            border-top: 1px solid var(--border, #e3e0da);
           }
-          .lp-header-split {
-            grid-template-columns: 1fr !important;
-          }
-          .lp-header-right {
-            display: none !important;
-          }
-          .lp-header-name { font-size: 20px !important; }
+          .lp-feed { overflow-y: visible; }
         }
-        /* Feed section headers */
-        .lp-section-hd {
-          display: flex; align-items: center; gap: 10px;
-          margin: 4px 0 8px;
-          font-size: 11px; font-weight: 800; text-transform: uppercase;
-          letter-spacing: 0.07em; color: var(--text-muted);
-        }
-        .lp-section-hd::after {
-          content: ''; flex: 1; height: 1px; background: var(--border);
-        }
-        /* Pay card */
-        .lp-pay-card {
-          background: linear-gradient(135deg, #4a2080, #6b35b8);
-          border-radius: 14px; padding: 18px; color: #fff; margin-bottom: 12px;
-        }
-        /* History row */
-        .lp-hist-row {
-          display: flex; align-items: center; gap: 10px;
-          padding: 9px 0; border-bottom: 1px solid var(--border);
-        }
-        .lp-hist-row:last-child { border-bottom: none; }
-        /* All-clear */
-        .lp-all-clear {
-          display: flex; align-items: center; gap: 8px;
-          background: #ebf7ef; border: 1px solid rgba(30,142,62,.18);
-          border-radius: 10px; padding: 10px 14px;
-          font-size: 13px; color: #1e8e3e; font-weight: 600;
-          margin-bottom: 12px;
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+          .lp-header-right { display: none !important; }
+          .lp-header-name { font-size: 22px !important; }
+          .lp-sidebar-item { padding: 6px 12px !important; }
         }
       `}</style>
 
-      {/* ── Split header ── */}
-      <div
-        className="lp-header-split"
-        style={{
-          background: 'linear-gradient(145deg, #3b1870 0%, #5828a8 55%, #7040c8 100%)',
-          color: '#fff',
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-        }}
-      >
-        {/* Left: property info */}
-        <div style={{ padding: '22px 28px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', opacity: 0.62, marginBottom: '6px' }}>
+      {/* ══ HEADER ══ */}
+      <div style={{
+        background: 'linear-gradient(145deg, #3a1870 0%, #5828a8 55%, #6e3ec0 100%)',
+        color: '#fff',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+      }}>
+        {/* Left */}
+        <div style={{ padding: '28px 32px' }}>
+          <div style={{
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em',
+            textTransform: 'uppercase', opacity: 0.6, marginBottom: '10px',
+          }}>
             Rose Legacy Home Solutions · Property Report
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
             {property.photo_url && (
               <img
                 src={`${property.photo_url}?width=300`}
                 alt={property.name}
-                style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', flexShrink: 0 }}
+                style={{
+                  width: '72px', height: '72px', borderRadius: '14px',
+                  objectFit: 'cover', border: '2.5px solid rgba(255,255,255,.3)',
+                  flexShrink: 0,
+                }}
               />
             )}
             <div>
-              <h1 className="lp-header-name" style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>
+              <h1 className="lp-header-name" style={{
+                margin: '0 0 6px', fontSize: '32px', fontWeight: 800,
+                color: '#fff', lineHeight: 1.1, letterSpacing: '-0.3px',
+              }}>
                 {property.name}
               </h1>
-              <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '13px' }}>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,.75)', fontSize: '14px' }}>
                 {[property.address, property.city, property.state].filter(Boolean).join(', ')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right: quick stats in header */}
-        <div
-          className="lp-header-right"
-          style={{
-            background: 'rgba(0,0,0,0.15)',
-            borderLeft: '1px solid rgba(255,255,255,0.12)',
-            padding: '22px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1 }}>{allTickets.length}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>Órdenes</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: '#ffb87a' }}>{activeCount}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>En curso</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: '#7ee8a2' }}>{completedCount}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>Completas</div>
-            </div>
+        {/* Right: stats in header */}
+        <div className="lp-header-right" style={{
+          background: 'rgba(0,0,0,.18)',
+          borderLeft: '1px solid rgba(255,255,255,.12)',
+          padding: '28px 32px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          gap: '6px',
+        }}>
+          <div style={{ display: 'flex', gap: '28px' }}>
+            {[
+              { val: allTickets.length, lbl: 'Work Orders', color: '#fff' },
+              { val: activeCount, lbl: 'In Progress', color: '#ffb87a' },
+              { val: completedCount, lbl: 'Completed', color: '#7ee8a2' },
+            ].map(s => (
+              <div key={s.lbl} style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>{s.lbl}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── 3-column body ── */}
-      <div className="lp-body">
+      {/* ══ 3-COLUMN SHELL ══ */}
+      <div className="lp-shell">
 
-        {/* ── LEFT: Purple status sidebar ── */}
-        <div
-          className="lp-sidebar no-print"
-          style={{
-            background: 'var(--purple)',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100%',
-            position: 'sticky',
-            top: 0,
-          }}
-        >
-          <div className="lp-sidebar-items" style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
-            <div className="lp-sidebar-item" style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.10)', color: '#fff' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)', marginBottom: '8px' }} />
-              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#fff' }}>{allTickets.length}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>Órdenes totales</div>
-              <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Esta propiedad</div>
-            </div>
-            <div className="lp-sidebar-item" style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.10)', color: '#fff' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffb87a', marginBottom: '8px' }} />
-              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#ffb87a' }}>{activeCount}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>En progreso</div>
-              {activeCount > 0 && (
-                <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>{activeCount === 1 ? '1 activa' : `${activeCount} activas`}</div>
-              )}
-            </div>
-            <div className="lp-sidebar-item" style={{ padding: '18px 20px', color: '#fff' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#7ee8a2', marginBottom: '8px' }} />
-              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#7ee8a2' }}>{completedCount}</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>Completadas</div>
-              <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Con factura emitida</div>
-            </div>
+        {/* ── LEFT SIDEBAR ── */}
+        <div className="lp-sidebar no-print">
+          <div className="lp-sidebar-items" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            {[
+              { dot: 'rgba(255,255,255,.35)', val: allTickets.length, color: '#fff', lbl: 'Work Orders', note: 'This property' },
+              { dot: '#ffb87a', val: activeCount, color: '#ffb87a', lbl: 'In Progress', note: activeCount === 1 ? '1 active order' : `${activeCount} active` },
+              { dot: '#7ee8a2', val: completedCount, color: '#7ee8a2', lbl: 'Completed', note: 'Invoiced' },
+            ].map(s => (
+              <div
+                key={s.lbl}
+                className="lp-sidebar-item"
+                style={{
+                  padding: '20px',
+                  borderBottom: '1px solid rgba(255,255,255,.10)',
+                  color: '#fff',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: s.dot, marginBottom: '10px' }} />
+                <div className="lp-sidebar-val" style={{ fontSize: '30px', fontWeight: 800, lineHeight: 1, color: s.color }}>{s.val}</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '5px' }}>{s.lbl}</div>
+                <div style={{ fontSize: '11px', opacity: 0.45, marginTop: '3px' }}>{s.note}</div>
+              </div>
+            ))}
           </div>
-
-          {/* PDF / Link buttons */}
           <div
             className="lp-sidebar-btns"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              padding: '16px',
-              borderTop: '1px solid rgba(255,255,255,0.12)',
-            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', borderTop: '1px solid rgba(255,255,255,.12)' }}
           >
             <LandlordActions portalUrl={portalUrl} propertyName={property.name} />
           </div>
         </div>
 
-        {/* ── CENTER: Activity feed ── */}
-        <div style={{ padding: '20px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+        {/* ── CENTER FEED ── */}
+        <div className="lp-feed">
 
-          {/* Standalone estimates */}
           {standaloneEstimates && standaloneEstimates.length > 0 && (
-            <div style={{ marginBottom: '8px' }}>
-              <div className="lp-section-hd">
-                Estimates pendientes
-                <span style={{ background: 'var(--purple-soft)', color: 'var(--purple)', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+            <div style={{ marginBottom: '4px' }}>
+              <div className="lp-sec">
+                Pending Estimates
+                <span className="lp-badge" style={{ background: '#efe9f8', color: '#4a2080' }}>
                   {standaloneEstimates.filter(e => e.status === 'pending').length || standaloneEstimates.length}
                 </span>
               </div>
@@ -441,16 +464,19 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           )}
 
           {(!tickets || tickets.length === 0) && (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No work orders yet.
+            <div style={{
+              background: 'var(--card, #fff)', border: '1px solid var(--border)', borderRadius: '12px',
+              padding: '32px', textAlign: 'center', color: 'var(--text-muted)',
+            }}>
+              No work orders yet for this property.
             </div>
           )}
 
           {activeTickets.length > 0 && (
             <>
-              <div className="lp-section-hd">
-                En progreso
-                <span style={{ background: '#fdf1ea', color: '#c9622a', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+              <div className="lp-sec">
+                In Progress
+                <span className="lp-badge" style={{ background: '#fdf1ea', color: '#c9622a' }}>
                   {activeTickets.length}
                 </span>
               </div>
@@ -462,9 +488,9 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
 
           {completedTickets.length > 0 && (
             <>
-              <div className="lp-section-hd">
-                Completadas
-                <span style={{ background: '#ebf7ef', color: '#1e8e3e', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+              <div className="lp-sec">
+                Completed
+                <span className="lp-badge" style={{ background: '#ebf7ef', color: '#1e8e3e' }}>
                   {completedTickets.length}
                 </span>
               </div>
@@ -475,26 +501,14 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           )}
         </div>
 
-        {/* ── RIGHT: Payment action panel ── */}
-        <div
-          className="lp-action"
-          style={{
-            borderLeft: '1px solid var(--border)',
-            background: 'var(--card)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
+        {/* ── RIGHT ACTION PANEL ── */}
+        <div className="lp-action no-print">
+
           {/* Pending payments */}
           {hasAnyPending ? (
             <>
-              <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Acción requerida
-              </div>
+              <div className="lp-sec" style={{ marginTop: 0 }}>Action Required</div>
 
-              {/* Standalone unpaid invoices direct from standalone (no ticket) */}
               {(standaloneInvoices || []).filter(i => i.payment_status === 'pending' || i.payment_status === 'overdue').map(inv => (
                 <SingleInvoicePaymentBanner
                   key={inv.id}
@@ -534,38 +548,42 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
               ))}
             </>
           ) : (
-            <div className="lp-all-clear">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <div className="lp-ok">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              Todo está al corriente
+              All invoices are up to date
             </div>
           )}
 
-          {/* Invoice history — compact, no amounts */}
+          {/* Divider */}
+          {(paidHistoryItems.length > 0 || paidConsolidated.length > 0) && (
+            <div style={{ height: '1px', background: 'var(--border, #e3e0da)', margin: '2px 0' }} />
+          )}
+
+          {/* Payment history — compact rows, no amounts */}
           {paidHistoryItems.length > 0 && (
             <>
-              <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
-              <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                Historial de pagos
-              </div>
+              <div className="lp-sec" style={{ marginTop: 0 }}>Payment History</div>
               <div>
                 {paidHistoryItems.map((item) => (
-                  <div key={item.id} className="lp-hist-row">
+                  <div key={item.id} className="lp-hist">
                     <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#1e8e3e', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                         {item.invoiceNumber ? `Inv ${item.invoiceNumber}` : '—'}
                         {item.date ? ` · ${fmtDate(item.date)}` : ''}
                       </div>
                     </div>
                     <span style={{
-                      display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 700,
-                      padding: '3px 9px', borderRadius: '999px', whiteSpace: 'nowrap',
-                      background: '#ebf7ef', color: '#1e8e3e',
+                      fontSize: '10px', fontWeight: 700, padding: '3px 9px',
+                      borderRadius: '99px', background: '#ebf7ef', color: '#1e8e3e',
+                      flexShrink: 0, whiteSpace: 'nowrap',
                     }}>
-                      ✓ Pagado
+                      ✓ Paid
                     </span>
                   </div>
                 ))}
@@ -573,7 +591,6 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             </>
           )}
 
-          {/* Paid consolidated history via existing component */}
           {paidConsolidated.length > 0 && (
             <ConsolidatedPaymentBanner
               consolidatedInvoices={paidConsolidated}
