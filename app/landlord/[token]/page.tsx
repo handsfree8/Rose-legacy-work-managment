@@ -591,16 +591,23 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             </>
           )}
 
-          {paidConsolidated.length > 0 && (
-            <ConsolidatedPaymentBanner
-              consolidatedInvoices={paidConsolidated}
-              originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
-              tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
-              propertyName={property.name}
-              token={token}
-              variant="history"
-            />
-          )}
+          {paidConsolidated.map(c => (
+            <div key={c.id} className="lp-hist">
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#1e8e3e', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Consolidated · {c.invoice_number || ''}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {c.invoice_number ? `Inv ${c.invoice_number}` : '—'}
+                  {c.invoice_date ? ` · ${fmtDate(c.invoice_date)}` : ''}
+                </div>
+              </div>
+              <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 9px', borderRadius: '99px', background: '#ebf7ef', color: '#1e8e3e', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                ✓ Paid
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </main>

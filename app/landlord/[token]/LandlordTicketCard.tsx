@@ -4,6 +4,7 @@ import { useState } from 'react'
 import PhotoGallery from '@/app/components/PhotoGallery'
 import InvoicePreview from '@/app/components/InvoicePreview'
 import { approveEstimate, rejectEstimate, askEstimateQuestion } from './actions'
+import { payByCard } from './payment-actions'
 
 const getStatusBadgeStyle = (status: string | null) => {
   const normalized = (status || '').toLowerCase()
@@ -43,6 +44,7 @@ type Invoice = {
   discount_amount: number | null
   total: number
   payment_status: string
+  payment_link: string | null
 }
 type Property = { name: string; address: string | null; city: string | null; state: string | null }
 
@@ -81,7 +83,19 @@ export default function LandlordTicketCard({
 }: LandlordTicketCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [questionEstimateId, setQuestionEstimateId] = useState<string | null>(null)
+  const [payBusy, setPayBusy] = useState(false)
+  const [payError, setPayError] = useState<string | null>(null)
   const hasPhotos = beforePhotos.length > 0 || afterPhotos.length > 0
+
+  async function handlePay() {
+    if (!invoice) return
+    setPayBusy(true)
+    setPayError(null)
+    const result = await payByCard(invoice.id, token)
+    setPayBusy(false)
+    if (result.error) setPayError(result.error)
+    else if (result.url) window.open(result.url, '_blank', 'noopener,noreferrer')
+  }
 
   const paidTag = paidInvoiceNumber ? (
     <span
@@ -179,6 +193,51 @@ export default function LandlordTicketCard({
               Invoice {invoice.invoice_number || '—'} · ${Number(invoice.total).toFixed(2)} · See payment request above
             </p>
           </div>
+        </div>
+      )}
+
+      {invoice && (invoice.payment_status === 'pending' || invoice.payment_status === 'overdue') && (
+        <div style={{
+          background: 'linear-gradient(135deg, #4a2080, #6b35b8)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', marginBottom: '4px' }}>
+              Payment Due · {invoice.invoice_number || ''}
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+              ${Number(invoice.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+          {invoice.payment_link ? (
+            <a
+              href={invoice.payment_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ background: '#fff', color: '#4a2080', padding: '10px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              Pay Now
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled={payBusy}
+              onClick={handlePay}
+              style={{ background: '#2f9e44', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', cursor: payBusy ? 'wait' : 'pointer', opacity: payBusy ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              {payBusy ? 'Opening…' : 'Pay by card'}
+            </button>
+          )}
+          {payError && <p style={{ color: '#fca5a5', fontSize: '12px', margin: 0, width: '100%' }}>{payError}</p>}
         </div>
       )}
 
