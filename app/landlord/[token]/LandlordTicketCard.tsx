@@ -104,7 +104,7 @@ export default function LandlordTicketCard({
   const detailContent = (
     <>
       {ticket.summary_en && (
-        <p style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{ticket.summary_en}</p>
+        <p style={{ margin: '0 0 12px 0', color: 'var(--text)', whiteSpace: 'pre-wrap' }}>{ticket.summary_en}</p>
       )}
 
       {ticket.recommended_action && (

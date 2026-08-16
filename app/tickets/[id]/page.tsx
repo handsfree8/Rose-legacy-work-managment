@@ -414,8 +414,8 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                 background: '#fff',
               }}
             >
-              <p style={{ margin: 0 }}>
-                <strong></strong> {ticket.summary_en || 'No English summary available.'}
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                {ticket.summary_en || 'No English summary available.'}
               </p>
             </div>
           </div>
