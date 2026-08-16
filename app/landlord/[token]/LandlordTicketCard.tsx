@@ -131,7 +131,7 @@ export default function LandlordTicketCard({
         }}
       >
         <strong>Work performed:</strong>{' '}
-        {ticket.work_performed || 'Not documented yet.'}
+        <span style={{ whiteSpace: 'pre-wrap' }}>{ticket.work_performed || 'Not documented yet.'}</span>
       </div>
 
       {hasPhotos && (

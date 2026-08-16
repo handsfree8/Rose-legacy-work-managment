@@ -470,7 +470,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
                 background: '#fff',
               }}
             >
-              <p style={{ margin: 0 }}>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                 {ticket.work_performed || 'Not documented yet. Add details in "Edit Ticket".'}
               </p>
             </div>
