@@ -70,7 +70,6 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   const invoices = invoicesResult.data
   const standaloneInvoices = (standaloneInvoicesResult.data || []) as typeof invoices
 
-  // Find consolidated invoices referenced by any of this property's invoices
   const consolidatedIds = [...new Set(
     (invoices || []).map(inv => inv.consolidated_into).filter(Boolean)
   )]
@@ -106,14 +105,10 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
   }
   const invoiceByTicket = new Map((invoices || []).map((inv) => [inv.ticket_id, inv]))
 
-  // Split consolidated invoices: unpaid stay prominent at top; paid become a quiet
-  // "Payment history" entry at the bottom so they don't look like a current balance.
   const pendingConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status !== 'paid')
   const paidConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status === 'paid')
   const consolidatedById = new Map((consolidatedInvoices || []).map(c => [c.id, c]))
 
-  // Standalone unpaid invoices (one ticket, not part of a consolidation) — these
-  // get the same prominent "Payment Request" banner as consolidated ones.
   const ticketTitleById = new Map((tickets || []).map(t => [t.id, t.title as string]))
   const standaloneUnpaid = (invoices || []).filter(
     (i) => !i.consolidated_into && i.ticket_id && (i.payment_status === 'pending' || i.payment_status === 'overdue')
@@ -122,7 +117,6 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     (i) => !i.consolidated_into && i.ticket_id && i.payment_status === 'paid'
   )
 
-  // Per-ticket "Paid · INV-xxx" tag for work orders covered by a settled consolidated payment.
   const paidTicketTags = new Map<string, string>()
   for (const inv of invoices || []) {
     if (!inv.consolidated_into || !inv.ticket_id) continue
@@ -132,39 +126,50 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     }
   }
 
-  // ── Summary stats for the report header ──
   const DONE = new Set(['completed', 'closed', 'resolved'])
   const allTickets = tickets || []
   const completedCount = allTickets.filter(t => DONE.has((t.status || '').toLowerCase())).length
   const activeCount = allTickets.length - completedCount
 
-  const paidTotal =
-    (invoices || []).filter(i => i.payment_status === 'paid').reduce((s, i) => s + Number(i.total || 0), 0) +
-    paidConsolidated.reduce((s, c) => s + Number(c.total || 0), 0)
-  const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
-
-  // Active work orders first, then completed — each group newest-first (already ordered).
   const sortedTickets = [...allTickets].sort((a, b) => {
     const ad = DONE.has((a.status || '').toLowerCase()) ? 1 : 0
     const bd = DONE.has((b.status || '').toLowerCase()) ? 1 : 0
     return ad - bd
   })
 
-  // Build the absolute portal URL (for the "Email report" / "Copy link" actions).
   const h = await headers()
   const host = h.get('x-forwarded-host') || h.get('host') || 'rose-legacy-work-management.vercel.app'
   const proto = h.get('x-forwarded-proto') || 'https'
   const portalUrl = `${proto}://${host}/landlord/${token}`
 
-  const stats = [
-    { label: 'Work Orders', value: String(allTickets.length), tone: 'var(--purple)' },
-    { label: 'In Progress', value: String(activeCount), tone: '#c9622a' },
-    { label: 'Completed', value: String(completedCount), tone: '#1e8e3e' },
-    { label: 'Total Paid', value: fmtUsd(paidTotal), tone: 'var(--purple)' },
+  // All invoices that need payment (shown in right panel)
+  const hasAnyPending = standaloneUnpaid.length > 0 || pendingConsolidated.length > 0 ||
+    (standaloneInvoices || []).some(i => i.payment_status === 'pending' || i.payment_status === 'overdue')
+
+  // Compact paid invoice rows for history panel (no amounts shown)
+  const paidHistoryItems: { id: string; title: string; invoiceNumber: string | null; date: string | null }[] = [
+    ...standalonePaid.map(inv => ({
+      id: inv.id,
+      title: (inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order',
+      invoiceNumber: inv.invoice_number,
+      date: inv.invoice_date,
+    })),
+    ...paidConsolidated.map(c => ({
+      id: c.id,
+      title: `Consolidated · ${c.invoice_number || ''}`,
+      invoiceNumber: c.invoice_number,
+      date: c.invoice_date,
+    })),
+    ...(standaloneInvoices || []).filter(i => i.payment_status === 'paid').map(inv => ({
+      id: inv.id,
+      title: inv.client_name || 'Service Invoice',
+      invoiceNumber: inv.invoice_number,
+      date: inv.invoice_date,
+    })),
   ]
 
-  const activeTickets = sortedTickets.filter(t => !DONE.has((t.status || '').toLowerCase()))
-  const completedTickets = sortedTickets.filter(t => DONE.has((t.status || '').toLowerCase()))
+  const fmtDate = (d: string | null) =>
+    d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
 
   const renderTicket = (ticket: (typeof allTickets)[number]) => {
     const ticketPhotos = photosByTicket.get(ticket.id) || []
@@ -184,89 +189,313 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     )
   }
 
-  const SectionHeader = ({ label, count }: { label: string; count: number }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 2px 4px' }}>
-      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--purple-soft)', borderRadius: '999px', padding: '2px 9px' }}>{count}</span>
-      <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-    </div>
-  )
+  const activeTickets = sortedTickets.filter(t => !DONE.has((t.status || '').toLowerCase()))
+  const completedTickets = sortedTickets.filter(t => DONE.has((t.status || '').toLowerCase()))
 
   return (
-    <main style={{ padding: '24px 20px 64px', background: 'var(--bg)', minHeight: '100vh' }}>
+    <main style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          main { background: #fff !important; padding: 0 !important; }
+          .lp-body { display: block !important; }
+          .lp-sidebar, .lp-action { display: none !important; }
+        }
+        /* 3-column layout */
+        .lp-body {
+          display: grid;
+          grid-template-columns: 200px 1fr 300px;
+          min-height: calc(100vh - 140px);
+          align-items: start;
+        }
+        /* Tablet */
+        @media (max-width: 960px) {
+          .lp-body {
+            grid-template-columns: 1fr 280px;
+            grid-template-rows: auto auto;
+          }
+          .lp-sidebar {
+            grid-column: 1 / -1;
+            flex-direction: row !important;
+            padding: 12px 16px !important;
+          }
+          .lp-sidebar-items {
+            flex-direction: row !important;
+            gap: 0 !important;
+            flex: 1;
+          }
+          .lp-sidebar-item {
+            border-bottom: none !important;
+            border-right: 1px solid rgba(255,255,255,0.12) !important;
+            padding: 8px 20px !important;
+            flex: 1;
+          }
+          .lp-sidebar-item:last-child { border-right: none !important; }
+          .lp-sidebar-val { font-size: 22px !important; }
+          .lp-sidebar-btns { flex-direction: row !important; border-top: none !important; padding-top: 0 !important; }
+        }
+        /* Mobile */
+        @media (max-width: 640px) {
+          .lp-body {
+            grid-template-columns: 1fr;
+          }
+          .lp-sidebar {
+            flex-direction: column !important;
+            padding: 16px !important;
+          }
+          .lp-sidebar-items {
+            flex-direction: row !important;
+            gap: 0 !important;
+          }
+          .lp-sidebar-item {
+            border-right: 1px solid rgba(255,255,255,0.12) !important;
+            border-bottom: none !important;
+            padding: 8px 12px !important;
+            flex: 1;
+          }
+          .lp-sidebar-item:last-child { border-right: none !important; }
+          .lp-sidebar-btns {
+            flex-direction: row !important;
+            border-top: 1px solid rgba(255,255,255,0.12) !important;
+            padding-top: 12px !important;
+            margin-top: 12px !important;
+            gap: 8px;
+          }
+          .lp-action {
+            border-left: none !important;
+            border-top: 1px solid var(--border) !important;
+          }
+          .lp-header-split {
+            grid-template-columns: 1fr !important;
+          }
+          .lp-header-right {
+            display: none !important;
+          }
+          .lp-header-name { font-size: 20px !important; }
+        }
+        /* Feed section headers */
+        .lp-section-hd {
+          display: flex; align-items: center; gap: 10px;
+          margin: 4px 0 8px;
+          font-size: 11px; font-weight: 800; text-transform: uppercase;
+          letter-spacing: 0.07em; color: var(--text-muted);
+        }
+        .lp-section-hd::after {
+          content: ''; flex: 1; height: 1px; background: var(--border);
+        }
+        /* Pay card */
+        .lp-pay-card {
+          background: linear-gradient(135deg, #4a2080, #6b35b8);
+          border-radius: 14px; padding: 18px; color: #fff; margin-bottom: 12px;
+        }
+        /* History row */
+        .lp-hist-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 0; border-bottom: 1px solid var(--border);
+        }
+        .lp-hist-row:last-child { border-bottom: none; }
+        /* All-clear */
+        .lp-all-clear {
+          display: flex; align-items: center; gap: 8px;
+          background: #ebf7ef; border: 1px solid rgba(30,142,62,.18);
+          border-radius: 10px; padding: 10px 14px;
+          font-size: 13px; color: #1e8e3e; font-weight: 600;
+          margin-bottom: 12px;
         }
       `}</style>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
-        {/* ── Hero header ── */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #4a2080 0%, #6b35b8 100%)',
-            borderRadius: '20px',
-            padding: '28px',
-            marginBottom: '16px',
-            color: '#fff',
-            boxShadow: '0 8px 30px rgba(74,32,128,0.25)',
-          }}
-        >
-          <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8, marginBottom: '14px' }}>
+      {/* ── Split header ── */}
+      <div
+        className="lp-header-split"
+        style={{
+          background: 'linear-gradient(145deg, #3b1870 0%, #5828a8 55%, #7040c8 100%)',
+          color: '#fff',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+        }}
+      >
+        {/* Left: property info */}
+        <div style={{ padding: '22px 28px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', opacity: 0.62, marginBottom: '6px' }}>
             Rose Legacy Home Solutions · Property Report
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             {property.photo_url && (
               <img
-                src={`${property.photo_url}?width=400`}
+                src={`${property.photo_url}?width=300`}
                 alt={property.name}
-                style={{ width: '110px', height: '110px', borderRadius: '16px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.25)' }}
+                style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', flexShrink: 0 }}
               />
             )}
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <h1 style={{ margin: '0 0 8px 0', fontSize: '36px', lineHeight: 1.05, color: '#fff', fontWeight: 800, letterSpacing: '-0.01em' }}>
+            <div>
+              <h1 className="lp-header-name" style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>
                 {property.name}
               </h1>
-              <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', fontSize: '15px' }}>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '13px' }}>
                 {[property.address, property.city, property.state].filter(Boolean).join(', ')}
               </p>
             </div>
           </div>
+        </div>
 
-          <div style={{ marginTop: '20px' }}>
+        {/* Right: quick stats in header */}
+        <div
+          className="lp-header-right"
+          style={{
+            background: 'rgba(0,0,0,0.15)',
+            borderLeft: '1px solid rgba(255,255,255,0.12)',
+            padding: '22px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1 }}>{allTickets.length}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>Órdenes</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: '#ffb87a' }}>{activeCount}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>En curso</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: '#7ee8a2' }}>{completedCount}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.6, marginTop: '3px' }}>Completas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3-column body ── */}
+      <div className="lp-body">
+
+        {/* ── LEFT: Purple status sidebar ── */}
+        <div
+          className="lp-sidebar no-print"
+          style={{
+            background: 'var(--purple)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100%',
+            position: 'sticky',
+            top: 0,
+          }}
+        >
+          <div className="lp-sidebar-items" style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
+            <div className="lp-sidebar-item" style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.10)', color: '#fff' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)', marginBottom: '8px' }} />
+              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#fff' }}>{allTickets.length}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>Órdenes totales</div>
+              <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Esta propiedad</div>
+            </div>
+            <div className="lp-sidebar-item" style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.10)', color: '#fff' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffb87a', marginBottom: '8px' }} />
+              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#ffb87a' }}>{activeCount}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>En progreso</div>
+              {activeCount > 0 && (
+                <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>{activeCount === 1 ? '1 activa' : `${activeCount} activas`}</div>
+              )}
+            </div>
+            <div className="lp-sidebar-item" style={{ padding: '18px 20px', color: '#fff' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#7ee8a2', marginBottom: '8px' }} />
+              <div className="lp-sidebar-val" style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1, color: '#7ee8a2' }}>{completedCount}</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.6, marginTop: '4px' }}>Completadas</div>
+              <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>Con factura emitida</div>
+            </div>
+          </div>
+
+          {/* PDF / Link buttons */}
+          <div
+            className="lp-sidebar-btns"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              padding: '16px',
+              borderTop: '1px solid rgba(255,255,255,0.12)',
+            }}
+          >
             <LandlordActions portalUrl={portalUrl} propertyName={property.name} />
           </div>
         </div>
 
-        {/* ── Stats strip ── */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: '12px',
-            marginBottom: '22px',
-          }}
-        >
-          {stats.map((s) => (
-            <div key={s.label} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px 18px', boxShadow: 'var(--shadow)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
-              <div style={{ fontSize: '26px', fontWeight: 800, color: s.tone, marginTop: '4px', lineHeight: 1.1 }}>{s.value}</div>
+        {/* ── CENTER: Activity feed ── */}
+        <div style={{ padding: '20px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+
+          {/* Standalone estimates */}
+          {standaloneEstimates && standaloneEstimates.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div className="lp-section-hd">
+                Estimates pendientes
+                <span style={{ background: 'var(--purple-soft)', color: 'var(--purple)', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+                  {standaloneEstimates.filter(e => e.status === 'pending').length || standaloneEstimates.length}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {standaloneEstimates.map((est) => (
+                  <StandaloneEstimateCard key={est.id} estimate={est} token={token} />
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          {(!tickets || tickets.length === 0) && (
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              No work orders yet.
+            </div>
+          )}
+
+          {activeTickets.length > 0 && (
+            <>
+              <div className="lp-section-hd">
+                En progreso
+                <span style={{ background: '#fdf1ea', color: '#c9622a', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+                  {activeTickets.length}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gap: '12px', marginBottom: '8px' }}>
+                {activeTickets.map(renderTicket)}
+              </div>
+            </>
+          )}
+
+          {completedTickets.length > 0 && (
+            <>
+              <div className="lp-section-hd">
+                Completadas
+                <span style={{ background: '#ebf7ef', color: '#1e8e3e', borderRadius: '999px', padding: '1px 8px', fontSize: '10px', fontWeight: 700 }}>
+                  {completedTickets.length}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {completedTickets.map(renderTicket)}
+              </div>
+            </>
+          )}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '14px' }}>
-          A summary of work orders for your property. Click any work order to see photos and details.
-        </p>
-
-        {/* ── Standalone invoices (no ticket, billed directly to property) ── */}
-        {standaloneInvoices && standaloneInvoices.length > 0 && (() => {
-          const unpaid = standaloneInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'overdue')
-          const paid = standaloneInvoices.filter(i => i.payment_status === 'paid')
-          return (
+        {/* ── RIGHT: Payment action panel ── */}
+        <div
+          className="lp-action"
+          style={{
+            borderLeft: '1px solid var(--border)',
+            background: 'var(--card)',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          {/* Pending payments */}
+          {hasAnyPending ? (
             <>
-              {unpaid.map(inv => (
+              <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                Acción requerida
+              </div>
+
+              {/* Standalone unpaid invoices direct from standalone (no ticket) */}
+              {(standaloneInvoices || []).filter(i => i.payment_status === 'pending' || i.payment_status === 'overdue').map(inv => (
                 <SingleInvoicePaymentBanner
                   key={inv.id}
                   invoiceId={inv.id}
@@ -280,120 +509,82 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
                   token={token}
                 />
               ))}
-              {paid.length > 0 && (
-                <div style={{ marginBottom: '8px' }}>
-                  {paid.map(inv => (
-                    <SingleInvoicePaymentBanner
-                      key={inv.id}
-                      invoiceId={inv.id}
-                      invoiceNumber={inv.invoice_number}
-                      invoiceDate={inv.invoice_date}
-                      total={Number(inv.total)}
-                      paymentStatus={inv.payment_status}
-                      paymentLink={inv.payment_link}
-                      workOrderTitle={inv.client_name || 'Service Invoice'}
-                      items={(itemsByInvoice.get(inv.id) || []).map(it => ({ id: it.id, description: it.description, line_total: it.line_total }))}
-                      token={token}
-                      variant="paid"
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )
-        })()}
 
-        <ConsolidatedPaymentBanner
-          consolidatedInvoices={pendingConsolidated}
-          originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
-          tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
-          propertyName={property.name}
-          token={token}
-        />
-
-        {standaloneUnpaid.map((inv) => (
-          <SingleInvoicePaymentBanner
-            key={inv.id}
-            invoiceId={inv.id}
-            invoiceNumber={inv.invoice_number}
-            invoiceDate={inv.invoice_date}
-            total={Number(inv.total)}
-            paymentStatus={inv.payment_status}
-            paymentLink={inv.payment_link}
-            workOrderTitle={(inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order'}
-            items={(itemsByInvoice.get(inv.id) || []).map((it) => ({ id: it.id, description: it.description, line_total: it.line_total }))}
-            token={token}
-          />
-        ))}
-
-        {(paidConsolidated.length > 0 || standalonePaid.length > 0) && (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
-              Billing Summary
-            </div>
-            {standalonePaid.map((inv) => (
-              <SingleInvoicePaymentBanner
-                key={inv.id}
-                invoiceId={inv.id}
-                invoiceNumber={inv.invoice_number}
-                invoiceDate={inv.invoice_date}
-                total={Number(inv.total)}
-                paymentStatus={inv.payment_status}
-                paymentLink={inv.payment_link}
-                workOrderTitle={(inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order'}
-                items={(itemsByInvoice.get(inv.id) || []).map((it) => ({ id: it.id, description: it.description, line_total: it.line_total }))}
-                token={token}
-                variant="paid"
-              />
-            ))}
-            {paidConsolidated.length > 0 && (
               <ConsolidatedPaymentBanner
-                consolidatedInvoices={paidConsolidated}
+                consolidatedInvoices={pendingConsolidated}
                 originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
                 tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
                 propertyName={property.name}
                 token={token}
-                variant="history"
               />
-            )}
-          </div>
-        )}
 
-        {/* ── Standalone estimates (not linked to a ticket) ── */}
-        {standaloneEstimates && standaloneEstimates.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <SectionHeader label="Estimates Awaiting Approval" count={standaloneEstimates.filter(e => e.status === 'pending').length || standaloneEstimates.length} />
-            <div style={{ display: 'grid', gap: '16px', marginTop: '8px' }}>
-              {standaloneEstimates.map((est) => (
-                <StandaloneEstimateCard key={est.id} estimate={est} token={token} />
+              {standaloneUnpaid.map((inv) => (
+                <SingleInvoicePaymentBanner
+                  key={inv.id}
+                  invoiceId={inv.id}
+                  invoiceNumber={inv.invoice_number}
+                  invoiceDate={inv.invoice_date}
+                  total={Number(inv.total)}
+                  paymentStatus={inv.payment_status}
+                  paymentLink={inv.payment_link}
+                  workOrderTitle={(inv.ticket_id && ticketTitleById.get(inv.ticket_id)) || 'Work order'}
+                  items={(itemsByInvoice.get(inv.id) || []).map((it) => ({ id: it.id, description: it.description, line_total: it.line_total }))}
+                  token={token}
+                />
               ))}
+            </>
+          ) : (
+            <div className="lp-all-clear">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Todo está al corriente
             </div>
-          </div>
-        )}
+          )}
 
-        {(!tickets || tickets.length === 0) && (
-          <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-            No work orders yet.
-          </div>
-        )}
+          {/* Invoice history — compact, no amounts */}
+          {paidHistoryItems.length > 0 && (
+            <>
+              <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
+              <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '2px' }}>
+                Historial de pagos
+              </div>
+              <div>
+                {paidHistoryItems.map((item) => (
+                  <div key={item.id} className="lp-hist-row">
+                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#1e8e3e', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                        {item.invoiceNumber ? `Inv ${item.invoiceNumber}` : '—'}
+                        {item.date ? ` · ${fmtDate(item.date)}` : ''}
+                      </div>
+                    </div>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 700,
+                      padding: '3px 9px', borderRadius: '999px', whiteSpace: 'nowrap',
+                      background: '#ebf7ef', color: '#1e8e3e',
+                    }}>
+                      ✓ Pagado
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-        {activeTickets.length > 0 && (
-          <>
-            <SectionHeader label="Active" count={activeTickets.length} />
-            <div style={{ display: 'grid', gap: '16px', marginBottom: '8px' }}>
-              {activeTickets.map(renderTicket)}
-            </div>
-          </>
-        )}
-
-        {completedTickets.length > 0 && (
-          <>
-            <SectionHeader label="Completed" count={completedTickets.length} />
-            <div style={{ display: 'grid', gap: '16px' }}>
-              {completedTickets.map(renderTicket)}
-            </div>
-          </>
-        )}
+          {/* Paid consolidated history via existing component */}
+          {paidConsolidated.length > 0 && (
+            <ConsolidatedPaymentBanner
+              consolidatedInvoices={paidConsolidated}
+              originalInvoices={(invoices || []).filter(inv => inv.consolidated_into)}
+              tickets={(tickets || []).map(t => ({ id: t.id, title: t.title, unit_number: t.unit_number }))}
+              propertyName={property.name}
+              token={token}
+              variant="history"
+            />
+          )}
+        </div>
       </div>
     </main>
   )
