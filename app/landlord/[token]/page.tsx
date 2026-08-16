@@ -301,12 +301,6 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           font-size: 13px; color: #1e8e3e; font-weight: 600;
           margin-bottom: 12px;
         }
-        /* Warranty badge */
-        .lp-warranty {
-          display: inline-flex; align-items: center; gap: 5px;
-          font-size: 10px; font-weight: 700; color: #1e8e3e;
-          background: #ebf7ef; border-radius: 6px; padding: 3px 8px;
-        }
       `}</style>
 
       {/* ── Split header ── */}
@@ -475,25 +469,7 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
                 </span>
               </div>
               <div style={{ display: 'grid', gap: '12px' }}>
-                {completedTickets.map((ticket) => {
-                  const inv = invoiceByTicket.get(ticket.id)
-                  const hasWarranty = inv?.warranty_disclaimer
-                  return (
-                    <div key={ticket.id} style={{ position: 'relative' }}>
-                      {hasWarranty && (
-                        <div style={{ position: 'absolute', top: '12px', right: '56px', zIndex: 1 }}>
-                          <span className="lp-warranty">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            </svg>
-                            Garantía 30d
-                          </span>
-                        </div>
-                      )}
-                      {renderTicket(ticket)}
-                    </div>
-                  )
-                })}
+                {completedTickets.map(renderTicket)}
               </div>
             </>
           )}
