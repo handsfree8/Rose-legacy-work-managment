@@ -103,7 +103,14 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
     list.push(estimate)
     estimatesByTicket.set(estimate.ticket_id, list)
   }
-  const invoiceByTicket = new Map((invoices || []).map((inv) => [inv.ticket_id, inv]))
+  type InvoiceRow = NonNullable<typeof invoices>[number]
+  const invoicesByTicket = new Map<string, InvoiceRow[]>()
+  for (const inv of invoices || []) {
+    if (!inv.ticket_id) continue
+    const list = invoicesByTicket.get(inv.ticket_id) || []
+    list.push(inv)
+    invoicesByTicket.set(inv.ticket_id, list)
+  }
 
   const pendingConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status !== 'paid')
   const paidConsolidated = (consolidatedInvoices || []).filter(c => c.payment_status === 'paid')
@@ -173,8 +180,10 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
         beforePhotos={ticketPhotos.filter((p) => p.photo_type === 'before')}
         afterPhotos={ticketPhotos.filter((p) => p.photo_type === 'after')}
         estimates={estimatesByTicket.get(ticket.id) || []}
-        invoice={invoiceByTicket.get(ticket.id)}
-        invoiceItems={invoiceByTicket.get(ticket.id) ? itemsByInvoice.get(invoiceByTicket.get(ticket.id)!.id) || [] : []}
+        invoices={invoicesByTicket.get(ticket.id) || []}
+        invoiceItemsById={Object.fromEntries(
+          (invoicesByTicket.get(ticket.id) || []).map(inv => [inv.id, itemsByInvoice.get(inv.id) || []])
+        )}
         property={property}
         token={token}
         paidInvoiceNumber={paidTicketTags.get(ticket.id) ?? null}

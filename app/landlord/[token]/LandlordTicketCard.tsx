@@ -62,8 +62,8 @@ type LandlordTicketCardProps = {
   beforePhotos: Photo[]
   afterPhotos: Photo[]
   estimates: Estimate[]
-  invoice?: Invoice
-  invoiceItems?: InvoiceItem[]
+  invoices?: Invoice[]
+  invoiceItemsById?: Record<string, InvoiceItem[]>
   property: Property
   token: string
   // Set when this work order is covered by an already-paid consolidated invoice.
@@ -75,24 +75,25 @@ export default function LandlordTicketCard({
   beforePhotos,
   afterPhotos,
   estimates,
-  invoice,
-  invoiceItems,
+  invoices = [],
+  invoiceItemsById = {},
   property,
   token,
   paidInvoiceNumber,
 }: LandlordTicketCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [questionEstimateId, setQuestionEstimateId] = useState<string | null>(null)
-  const [payBusy, setPayBusy] = useState(false)
+  const [payBusy, setPayBusy] = useState<string | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
   const hasPhotos = beforePhotos.length > 0 || afterPhotos.length > 0
 
-  async function handlePay() {
-    if (!invoice) return
-    setPayBusy(true)
+  const pendingInvoice = invoices.find(i => i.payment_status === 'pending' || i.payment_status === 'overdue') ?? null
+
+  async function handlePay(invoiceId: string) {
+    setPayBusy(invoiceId)
     setPayError(null)
-    const result = await payByCard(invoice.id, token)
-    setPayBusy(false)
+    const result = await payByCard(invoiceId, token)
+    setPayBusy(null)
     if (result.error) setPayError(result.error)
     else if (result.url) window.open(result.url, '_blank', 'noopener,noreferrer')
   }
@@ -172,31 +173,7 @@ export default function LandlordTicketCard({
         </div>
       )}
 
-      {invoice && invoice.payment_status === 'consolidated' && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '12px 16px',
-          background: 'var(--purple-light)',
-          borderRadius: '10px',
-          border: '1px solid var(--purple-soft)',
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2.5" style={{ flexShrink: 0 }}>
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-          </svg>
-          <div>
-            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--purple)' }}>
-              Included in consolidated payment
-            </p>
-            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-              Invoice {invoice.invoice_number || '—'} · ${Number(invoice.total).toFixed(2)} · See payment request above
-            </p>
-          </div>
-        </div>
-      )}
-
-      {invoice && (invoice.payment_status === 'pending' || invoice.payment_status === 'overdue') && (
+      {pendingInvoice && (
         <div style={{
           background: 'linear-gradient(135deg, #4a2080, #6b35b8)',
           borderRadius: '12px',
@@ -210,15 +187,15 @@ export default function LandlordTicketCard({
         }}>
           <div>
             <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', marginBottom: '4px' }}>
-              Payment Due · {invoice.invoice_number || ''}
+              Payment Due · {pendingInvoice.invoice_number || ''}
             </div>
             <div style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-              ${Number(invoice.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              ${Number(pendingInvoice.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
           </div>
-          {invoice.payment_link ? (
+          {pendingInvoice.payment_link ? (
             <a
-              href={invoice.payment_link}
+              href={pendingInvoice.payment_link}
               target="_blank"
               rel="noopener noreferrer"
               style={{ background: '#fff', color: '#4a2080', padding: '10px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
@@ -229,21 +206,21 @@ export default function LandlordTicketCard({
           ) : (
             <button
               type="button"
-              disabled={payBusy}
-              onClick={handlePay}
+              disabled={payBusy === pendingInvoice.id}
+              onClick={() => handlePay(pendingInvoice.id)}
               style={{ background: '#2f9e44', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', cursor: payBusy ? 'wait' : 'pointer', opacity: payBusy ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-              {payBusy ? 'Opening…' : 'Pay by card'}
+              {payBusy === pendingInvoice.id ? 'Opening…' : 'Pay by card'}
             </button>
           )}
           {payError && <p style={{ color: '#fca5a5', fontSize: '12px', margin: 0, width: '100%' }}>{payError}</p>}
         </div>
       )}
 
-      {invoice && invoice.payment_status !== 'consolidated' && (
-        <InvoicePreview invoice={invoice} items={invoiceItems || []} property={property} />
-      )}
+      {invoices.filter(inv => inv.payment_status !== 'consolidated').map(inv => (
+        <InvoicePreview key={inv.id} invoice={inv} items={invoiceItemsById[inv.id] || []} property={property} />
+      ))}
 
       {estimates.length > 0 && (
         <div>
