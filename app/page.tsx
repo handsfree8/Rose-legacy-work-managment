@@ -170,7 +170,7 @@ export default async function Home() {
                   display: 'block',
                 }}
               >
-                {p.photo_url && (
+                {p.photo_url ? (
                   <img
                     src={p.photo_url}
                     alt={p.name}
@@ -181,6 +181,25 @@ export default async function Home() {
                       display: 'block',
                     }}
                   />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '220px',
+                    background: 'linear-gradient(135deg, #3a1870 0%, #5828a8 60%, #7c4dbd 100%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                  }}>
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+                      <polyline points="9 21 9 12 15 12 15 21"/>
+                    </svg>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                      No photo
+                    </span>
+                  </div>
                 )}
 
                 <div style={{ padding: '20px 20px 10px' }}>
