@@ -6,7 +6,7 @@ import { createServerClient } from '@supabase/ssr'
 //   /landlord/*       — landlord portal (secured by its own random token)
 //   /api/*            — Twilio webhooks and other machine endpoints
 //   /privacy          — public privacy policy
-const PUBLIC_PREFIXES = ['/login', '/landlord', '/api', '/privacy']
+const PUBLIC_PREFIXES = ['/login', '/landlord', '/tenant', '/api', '/privacy']
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(
