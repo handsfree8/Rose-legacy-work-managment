@@ -1,9 +1,10 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
 
-export type CreateUserResult = { ok: true } | { ok: false; error: string }
+export type CreateUserResult = { ok: true } | { ok: true; portalUrl: string } | { ok: false; error: string }
 
 async function generateUniqueAccessCode(): Promise<string> {
   for (let i = 0; i < 10; i++) {
@@ -25,6 +26,37 @@ export async function createAppUser(formData: FormData): Promise<CreateUserResul
   const password = formData.get('password')?.toString() || ''
   const role = formData.get('role')?.toString() || ''
   const propertyIds = formData.getAll('property_ids').map((v) => v.toString()).filter(Boolean)
+
+  // ── Tenant path — no auth account needed ──────────────────────
+  if (role === 'tenant') {
+    const tenantName  = formData.get('tenant_name')?.toString().trim() || ''
+    const unit        = formData.get('tenant_unit')?.toString().trim() || null
+    const rent        = parseFloat(formData.get('tenant_rent')?.toString() || '0')
+    const leaseStart  = formData.get('tenant_lease_start')?.toString() || null
+    const leaseEnd    = formData.get('tenant_lease_end')?.toString() || null
+    const propertyId  = propertyIds[0] || null
+
+    if (!tenantName) return { ok: false, error: 'Tenant name is required.' }
+    if (!propertyId) return { ok: false, error: 'Select a property for the tenant.' }
+    if (isNaN(rent) || rent <= 0) return { ok: false, error: 'Enter a valid rent amount.' }
+
+    const { data: tenant, error: tErr } = await supabase
+      .from('tenants')
+      .insert({ property_id: propertyId, name: tenantName, unit, rent_amount: rent, lease_start: leaseStart || null, lease_end: leaseEnd || null })
+      .select('tenant_token')
+      .single()
+
+    if (tErr || !tenant) return { ok: false, error: tErr?.message ?? 'Could not create tenant.' }
+
+    const hdrs = await headers()
+    const host = hdrs.get('host') || ''
+    const proto = host.startsWith('localhost') ? 'http' : 'https'
+    const portalUrl = `${proto}://${host}/tenant/${tenant.tenant_token}`
+
+    revalidatePath('/users')
+    revalidatePath('/tenants')
+    return { ok: true, portalUrl }
+  }
 
   if (!email || !password) return { ok: false, error: 'Email and password are required.' }
   if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' }
