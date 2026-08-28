@@ -14,7 +14,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
   const [openCount, setOpenCount] = useState<number | null>(null)
   const [questionCount, setQuestionCount] = useState<number | null>(null)
 
-  const hidden = pathname?.startsWith('/landlord') || pathname === '/login'
+  const hidden = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant') || pathname === '/login'
 
   useEffect(() => {
     if (hidden) return
@@ -47,7 +47,8 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
   const isDashboard = pathname?.startsWith('/dashboard')
   const isOpenTickets = pathname?.startsWith('/open-tickets')
   const isNewTicket = pathname?.startsWith('/new-ticket')
-  const isUsers = pathname?.startsWith('/users')
+  const isUsers   = pathname?.startsWith('/users')
+  const isTenants = pathname?.startsWith('/tenants')
 
   const navLink = (active: boolean): React.CSSProperties => ({
     textDecoration: 'none',
@@ -118,6 +119,8 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
           <a href="/dashboard" style={navLink(!!isDashboard)}>Dashboard</a>
 
           <a href="/users" style={navLink(!!isUsers)}>Users</a>
+
+          <a href="/tenants" style={navLink(!!isTenants)}>Tenants</a>
 
           <a href="/open-tickets" style={navLink(!!isOpenTickets)}>
             Open Tickets
