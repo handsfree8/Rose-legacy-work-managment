@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 type Phase = 'animating' | 'choice' | 'resident-input' | 'done'
 
@@ -10,8 +10,12 @@ export default function OpeningScreen() {
   const [token, setToken] = useState('')
   const [tokenError, setTokenError] = useState('')
   const router = useRouter()
+  const pathname = usePathname()
   const fallbackRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Never show on landlord or tenant portals
+  const isPortalRoute = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant')
 
   const INACTIVITY_MS = 3 * 60 * 1000 // 3 minutes
 
@@ -84,7 +88,7 @@ export default function OpeningScreen() {
     router.push(`/tenant/${tok}`)
   }
 
-  if (phase === null || phase === 'done') return <></>
+  if (phase === null || phase === 'done' || isPortalRoute) return <></>
 
   const reducedMotion =
     typeof window !== 'undefined'
