@@ -74,173 +74,359 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
   const prop   = tenant.properties
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <style>{`
+        /* ── Shell ── */
+        .tp-shell {
+          display: flex;
+          flex: 1;
+          align-items: stretch;
+          min-height: 0;
+        }
 
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ background: 'linear-gradient(155deg,#2a0e56 0%,#4a2080 48%,#6b35b8 100%)', padding: '52px 20px 24px', flexShrink: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)', marginBottom: 4 }}>
-          Rose Legacy · Tenant Portal
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.15 }}>Hi, {tenant.name.split(' ')[0]}</div>
-        {prop && (
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.55)', marginTop: 4 }}>
-            {prop.address}{tenant.unit ? ` · ${tenant.unit}` : ''}{prop.city ? ` · ${prop.city}, ${prop.state}` : ''}
-          </div>
-        )}
+        /* ── Sidebar (desktop) ── */
+        .tp-sidebar {
+          width: 260px;
+          flex-shrink: 0;
+          background: linear-gradient(175deg, #1a0838 0%, #2a0e56 40%, #4a2080 100%);
+          display: flex;
+          flex-direction: column;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+          padding: 36px 20px 24px;
+          color: #fff;
+        }
+        .tp-sidebar-eyebrow {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: .18em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,.35);
+          margin-bottom: 22px;
+        }
+        .tp-sidebar-avatar {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          margin-bottom: 20px;
+        }
+        .tp-sidebar-initials {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: rgba(255,255,255,.14);
+          border: 1.5px solid rgba(255,255,255,.22);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          font-size: 20px;
+          font-weight: 800;
+        }
+        .tp-sidebar-name { font-size: 16px; font-weight: 800; line-height: 1.2; }
+        .tp-sidebar-unit { font-size: 11px; opacity: .5; margin-top: 2px; }
+        .tp-divider {
+          height: 1px;
+          background: rgba(255,255,255,.12);
+          margin: 16px 0;
+        }
+        .tp-sidebar-sec {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: .15em;
+          text-transform: uppercase;
+          opacity: .38;
+          margin-bottom: 6px;
+        }
+        .tp-sidebar-action {
+          background: rgba(255,255,255,.1);
+          border: 1px solid rgba(255,255,255,.18);
+          border-radius: 10px;
+          padding: 11px 14px;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          text-align: left;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: background .15s;
+          margin-bottom: 8px;
+        }
+        .tp-sidebar-action:hover { background: rgba(255,255,255,.16); }
+        .tp-sidebar-action-ghost {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,.15);
+          border-radius: 10px;
+          padding: 11px 14px;
+          color: rgba(255,255,255,.7);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          text-align: left;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: background .15s;
+        }
+        .tp-sidebar-action-ghost:hover { background: rgba(255,255,255,.07); }
 
-        {/* Rent card */}
-        <div style={{ background: 'rgba(255,255,255,.11)', border: '1px solid rgba(255,255,255,.17)', borderRadius: 16, padding: '16px 18px', marginTop: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        /* ── Main ── */
+        .tp-main {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ── Tab bar ── */
+        .tp-tabs {
+          display: flex;
+          border-bottom: 1px solid var(--border);
+          background: var(--card);
+          flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          z-index: 5;
+        }
+        .tp-tab {
+          flex: 1;
+          padding: 14px 4px;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          font-size: 13px;
+          cursor: pointer;
+          position: relative;
+          transition: color .12s;
+        }
+        .tp-tab.active {
+          color: var(--purple);
+          font-weight: 700;
+          border-bottom-color: var(--purple);
+        }
+        .tp-tab:not(.active) {
+          color: var(--text-muted);
+          font-weight: 500;
+        }
+
+        /* ── Mobile: sidebar → top header strip ── */
+        @media (max-width: 768px) {
+          .tp-shell { flex-direction: column; }
+          .tp-sidebar {
+            width: 100%;
+            height: auto;
+            position: static;
+            padding: 52px 20px 22px;
+          }
+          .tp-main { overflow-y: visible; }
+          .tp-tabs { position: sticky; top: 0; }
+          /* Hide desktop avatar on mobile (shown inline in header) */
+          .tp-sidebar-avatar { display: none; }
+        }
+      `}</style>
+
+      <div className="tp-shell">
+
+        {/* ══ LEFT SIDEBAR ══ */}
+        <div className="tp-sidebar">
+          <div className="tp-sidebar-eyebrow">Rose Legacy · Tenant Portal</div>
+
+          {/* Avatar + name — desktop only (hidden on mobile via CSS) */}
+          <div className="tp-sidebar-avatar">
+            <div className="tp-sidebar-initials">{tenant.name.charAt(0)}</div>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 4 }}>
-                Monthly Rent
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-                ${tenant.rent_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', marginTop: 3 }}>
-                Due {rentDueDate(tenant.rent_due_day)}
-              </div>
-            </div>
-            <div style={{ background: '#f59e0b', borderRadius: 20, padding: '4px 11px', fontSize: 10, fontWeight: 700, color: '#fff' }}>
-              Due day {tenant.rent_due_day}
+              <div className="tp-sidebar-name">{tenant.name}</div>
+              {tenant.unit && <div className="tp-sidebar-unit">{tenant.unit}</div>}
             </div>
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', background: 'rgba(255,255,255,.07)', borderRadius: 10, padding: '8px 12px' }}>
-            💳 Online payments coming soon — contact your property manager to arrange payment.
-          </div>
-        </div>
-      </div>
 
-      {/* ── Tab bar ────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0 }}>
-        {([
-          { key: 'home',     label: 'Home' },
-          { key: 'tickets',  label: 'My Requests' },
-          { key: 'messages', label: 'Messages', badge: unread },
-        ] as const).map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            flex: 1, padding: '13px 4px', background: 'none', border: 'none',
-            borderBottom: tab === t.key ? '2px solid var(--purple)' : '2px solid transparent',
-            color: tab === t.key ? 'var(--purple)' : 'var(--text-muted)',
-            fontSize: 13, fontWeight: tab === t.key ? 700 : 500,
-            position: 'relative',
-          }}>
-            {t.label}
-            {'badge' in t && t.badge > 0 && (
-              <span style={{ position: 'absolute', top: 8, right: '50%', transform: 'translateX(24px)', background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 9, fontWeight: 800, padding: '1px 5px' }}>
-                {t.badge}
+          {/* Mobile greeting (desktop: avatar covers this) */}
+          <div style={{ display: 'none' }} className="tp-mobile-greeting">
+            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.15 }}>Hi, {tenant.name.split(' ')[0]}</div>
+          </div>
+
+          {prop && (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', marginBottom: 20, lineHeight: 1.5 }}>
+              {prop.address}{tenant.unit ? ` · ${tenant.unit}` : ''}{prop.city ? ` · ${prop.city}, ${prop.state}` : ''}
+            </div>
+          )}
+
+          <div className="tp-divider" />
+
+          {/* Rent */}
+          <div style={{ marginBottom: 4 }}>
+            <div className="tp-sidebar-sec">Monthly Rent</div>
+            <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1 }}>
+              ${tenant.rent_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 5 }}>
+              Due {rentDueDate(tenant.rent_due_day)}
+            </div>
+          </div>
+
+          {tenant.lease_end && (
+            <>
+              <div className="tp-divider" />
+              <div>
+                <div className="tp-sidebar-sec">Lease Expires</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{formatDate(tenant.lease_end)}</div>
+              </div>
+            </>
+          )}
+
+          <div className="tp-divider" />
+
+          {/* Quick actions */}
+          <button className="tp-sidebar-action" onClick={() => setShowNewTicket(true)}>
+            + New Request
+          </button>
+          <button className="tp-sidebar-action-ghost" onClick={() => setTab('messages')}>
+            Messages
+            {unread > 0 && (
+              <span style={{ background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 10, fontWeight: 800, padding: '2px 7px', flexShrink: 0 }}>
+                {unread}
               </span>
             )}
           </button>
-        ))}
-      </div>
 
-      {/* ── Content ────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: tab === 'messages' ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
+          {/* Online payments notice — pushed to bottom on desktop */}
+          <div style={{ marginTop: 'auto', paddingTop: 24, fontSize: 11, color: 'rgba(255,255,255,.32)', lineHeight: 1.5 }}>
+            💳 Online payments coming soon
+          </div>
+        </div>
 
-        {/* HOME */}
-        {tab === 'home' && (
-          <div style={{ padding: '20px 18px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Quick actions */}
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 13 }}>Quick Actions</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                <button onClick={() => { setShowNewTicket(true) }} style={{
-                  background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                  padding: '16px 14px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12,
-                  boxShadow: 'var(--shadow)',
-                }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--purple-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                    </svg>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>New Request</div>
-                </button>
-                <button onClick={() => setTab('messages')} style={{
-                  background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                  padding: '16px 14px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12,
-                  boxShadow: 'var(--shadow)',
-                }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0369a1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>
-                    Messages{unread > 0 && <span style={{ display: 'inline-block', marginLeft: 6, background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 10, padding: '0 5px', verticalAlign: 'middle' }}>{unread}</span>}
-                  </div>
-                </button>
-              </div>
-            </div>
+        {/* ══ MAIN AREA ══ */}
+        <div className="tp-main">
 
-            {/* Recent requests */}
-            {tickets.length > 0 && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Recent Requests</div>
-                  <button onClick={() => setTab('tickets')} style={{ background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: 'var(--purple)' }}>View all</button>
+          {/* Tab bar */}
+          <div className="tp-tabs">
+            {([
+              { key: 'home',     label: 'Home' },
+              { key: 'tickets',  label: 'My Requests' },
+              { key: 'messages', label: 'Messages', badge: unread },
+            ] as const).map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`tp-tab${tab === t.key ? ' active' : ''}`}
+              >
+                {t.label}
+                {'badge' in t && t.badge > 0 && (
+                  <span style={{ position: 'absolute', top: 8, right: '50%', transform: 'translateX(24px)', background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 9, fontWeight: 800, padding: '1px 5px' }}>
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Content area */}
+          <div style={{ flex: 1, overflowY: tab === 'messages' ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
+
+            {/* HOME */}
+            {tab === 'home' && (
+              <div style={{ padding: '28px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Quick actions grid */}
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 13 }}>Quick Actions</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                    <button
+                      onClick={() => setShowNewTicket(true)}
+                      style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 16px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow)', cursor: 'pointer' }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--purple-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>New Request</div>
+                    </button>
+                    <button
+                      onClick={() => setTab('messages')}
+                      style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 16px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow)', cursor: 'pointer' }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: 11, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0369a1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                        Messages
+                        {unread > 0 && (
+                          <span style={{ display: 'inline-block', marginLeft: 6, background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 10, padding: '0 5px', verticalAlign: 'middle' }}>{unread}</span>
+                        )}
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                {tickets.slice(0, 3).map(t => (
-                  <div key={t.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 8, boxShadow: 'var(--shadow)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+
+                {/* Recent requests */}
+                {tickets.length > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Recent Requests</div>
+                      <button onClick={() => setTab('tickets')} style={{ background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: 'var(--purple)', cursor: 'pointer' }}>View all</button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {tickets.slice(0, 3).map(t => (
+                        <div key={t.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px', boxShadow: 'var(--shadow)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{t.title}</div>
+                            {statusBadge(t.status)}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{t.category} · {formatDate(t.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tickets.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '40px 0' }}>
+                    No requests yet. Use &ldquo;New Request&rdquo; to get started.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TICKETS */}
+            {tab === 'tickets' && (
+              <div style={{ padding: '28px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  onClick={() => setShowNewTicket(true)}
+                  style={{ background: 'linear-gradient(135deg, var(--purple), var(--purple-mid))', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '13px', fontSize: 14, fontWeight: 700, marginBottom: 4, cursor: 'pointer' }}
+                >
+                  + New Request
+                </button>
+                {tickets.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '40px 0' }}>No requests yet.</div>
+                )}
+                {tickets.map(t => (
+                  <div key={t.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px', boxShadow: 'var(--shadow)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{t.title}</div>
                       {statusBadge(t.status)}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{t.category} · {formatDate(t.created_at)}</div>
+                    {t.emergency && <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>⚠ EMERGENCY</div>}
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.category} · Submitted {formatDate(t.created_at)}</div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Lease info */}
-            {tenant.lease_end && (
-              <div style={{ background: 'var(--purple-light)', border: '1px solid var(--purple-soft)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--purple)', marginBottom: 3 }}>Lease</div>
-                <div style={{ fontSize: 13, color: 'var(--text)' }}>Expires {formatDate(tenant.lease_end)}</div>
-              </div>
+            {/* MESSAGES */}
+            {tab === 'messages' && (
+              <MessageThread token={token} messages={messages} managerName={managerName} />
             )}
           </div>
-        )}
-
-        {/* TICKETS */}
-        {tab === 'tickets' && (
-          <div style={{ padding: '20px 18px 32px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={() => setShowNewTicket(true)} style={{
-              background: 'linear-gradient(135deg, var(--purple), var(--purple-mid))',
-              color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)',
-              padding: '13px', fontSize: 14, fontWeight: 700, marginBottom: 4,
-            }}>
-              + New Request
-            </button>
-            {tickets.length === 0 && (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '40px 0' }}>
-                No requests yet.
-              </div>
-            )}
-            {tickets.map(t => (
-              <div key={t.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px', boxShadow: 'var(--shadow)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{t.title}</div>
-                  {statusBadge(t.status)}
-                </div>
-                {t.emergency && (
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>⚠ EMERGENCY</div>
-                )}
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.category} · Submitted {formatDate(t.created_at)}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* MESSAGES */}
-        {tab === 'messages' && (
-          <MessageThread token={token} messages={messages} managerName={managerName} />
-        )}
+        </div>
       </div>
 
-      {/* New ticket sheet */}
       {showNewTicket && <NewTicketForm token={token} onClose={() => setShowNewTicket(false)} />}
     </div>
   )
