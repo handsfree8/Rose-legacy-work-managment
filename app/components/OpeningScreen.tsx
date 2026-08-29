@@ -77,10 +77,21 @@ export default function OpeningScreen() {
   function goResidentPortal() {
     setTokenError('')
     let tok = token.trim()
-    const urlMatch = tok.match(/\/tenant\/([0-9a-f]{48})/)
-    if (urlMatch) tok = urlMatch[1]
+
+    // Detect landlord link → navigate directly
+    const landlordMatch = tok.match(/\/landlord\/([^/?#\s]+)/)
+    if (landlordMatch) {
+      try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
+      setPhase('done')
+      router.push(`/landlord/${landlordMatch[1]}`)
+      return
+    }
+
+    // Detect tenant link or bare token
+    const tenantUrlMatch = tok.match(/\/tenant\/([0-9a-f]{48})/)
+    if (tenantUrlMatch) tok = tenantUrlMatch[1]
     if (!/^[0-9a-f]{48}$/.test(tok)) {
-      setTokenError('Pega el enlace completo de tu portal o el código de 48 caracteres.')
+      setTokenError('Pega tu enlace de portal (landlord o residente) o tu código de acceso.')
       return
     }
     try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
@@ -223,14 +234,14 @@ export default function OpeningScreen() {
               {phase === 'resident-input' && (
                 <div style={{width:'100%',display:'flex',flexDirection:'column',gap:10}}>
                   <p style={{color:'#c4b5fd',fontSize:13,margin:0,textAlign:'center',lineHeight:1.5}}>
-                    Pega el enlace de tu portal de residente
+                    Pega el enlace de tu portal (landlord o residente)
                   </p>
                   <input
                     autoFocus
                     value={token}
                     onChange={e => { setToken(e.target.value); setTokenError('') }}
                     onKeyDown={e => { if (e.key==='Enter') goResidentPortal() }}
-                    placeholder="https://…/tenant/… o tu código"
+                    placeholder="https://…/landlord/… o /tenant/… o tu código"
                     style={{
                       width:'100%',padding:'12px 14px',borderRadius:10,border:'1.5px solid #6b21a8',
                       background:'rgba(255,255,255,.08)',color:'#fff',fontSize:14,
