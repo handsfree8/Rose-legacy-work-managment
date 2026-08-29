@@ -10,18 +10,49 @@ export default function OpeningScreen() {
   const [token, setToken] = useState('')
   const [tokenError, setTokenError] = useState('')
   const router = useRouter()
-  const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fallbackRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const INACTIVITY_MS = 3 * 60 * 1000 // 3 minutes
+
+  function resetInactivity() {
+    if (inactivityRef.current) clearTimeout(inactivityRef.current)
+    inactivityRef.current = setTimeout(() => {
+      try { sessionStorage.removeItem('rl-opening-shown') } catch {}
+      setToken('')
+      setTokenError('')
+      setPhase('animating')
+      // Restart the fallback timer for the new animation
+      if (fallbackRef.current) clearTimeout(fallbackRef.current)
+      fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
+    }, INACTIVITY_MS)
+  }
 
   useEffect(() => {
     try {
       if (sessionStorage.getItem('rl-opening-shown')) {
         setPhase('done')
-        return
+      } else {
+        setPhase('animating')
+        fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
       }
-    } catch {}
-    setPhase('animating')
-    fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
-    return () => { if (fallbackRef.current) clearTimeout(fallbackRef.current) }
+    } catch {
+      setPhase('animating')
+      fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
+    }
+
+    // Track inactivity
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+    const handler = () => resetInactivity()
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }))
+    resetInactivity()
+
+    return () => {
+      if (fallbackRef.current) clearTimeout(fallbackRef.current)
+      if (inactivityRef.current) clearTimeout(inactivityRef.current)
+      events.forEach(e => window.removeEventListener(e, handler))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleAnimationEnd() {
@@ -53,7 +84,7 @@ export default function OpeningScreen() {
     router.push(`/tenant/${tok}`)
   }
 
-  if (phase === null || phase === 'done') return null
+  if (phase === null || phase === 'done') return <></>
 
   const reducedMotion =
     typeof window !== 'undefined'
