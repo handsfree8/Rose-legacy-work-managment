@@ -6,6 +6,7 @@ import LandlordActions from './LandlordActions'
 import StandaloneEstimateCard from './StandaloneEstimateCard'
 
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
+import LandlordMobileTabs from './LandlordMobileTabs'
 
 type LandlordPageProps = {
   params: Promise<{ token: string }>
@@ -303,6 +304,14 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           font-weight: 600;
         }
 
+        /* ── Mobile tab bar ── */
+        .lp-tab-bar {
+          display: none;
+        }
+        .lp-tab-section {
+          display: contents;
+        }
+
         /* ── Tablet: sidebar becomes top strip, action panel full-width below feed ── */
         @media (max-width: 960px) {
           .lp-shell { flex-direction: column; }
@@ -341,6 +350,52 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             border-top: 1px solid var(--border, #e3e0da);
           }
           .lp-feed { overflow-y: visible; }
+          .lp-tab-bar {
+            display: flex;
+            background: #3a1870;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            overflow-x: auto;
+          }
+          .lp-tab-btn {
+            flex: 1;
+            padding: 12px 8px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,.55);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-bottom: 2px solid transparent;
+            transition: color .15s, border-color .15s;
+            white-space: nowrap;
+          }
+          .lp-tab-active {
+            color: #fff;
+            border-bottom-color: #a78bfa;
+          }
+          .lp-tab-badge {
+            background: #a78bfa;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            border-radius: 99px;
+            padding: 1px 6px;
+            min-width: 16px;
+            text-align: center;
+          }
+          .lp-tab-section {
+            display: block;
+          }
+          .lp-tab-section[data-active="false"] {
+            display: none;
+          }
         }
 
         /* ── Mobile ── */
@@ -417,10 +472,12 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
         </div>
       </div>
 
-      {/* ══ 3-COLUMN SHELL ══ */}
+      {/* ══ SHELL with mobile tabs ══ */}
       <div className="lp-shell">
-
-        {/* ── LEFT SIDEBAR ── */}
+        <LandlordMobileTabs
+          activeCount={activeCount}
+          hasAnyPending={hasAnyPending}
+          overview={
         <div className="lp-sidebar no-print">
           <div className="lp-sidebar-items" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {[
@@ -453,7 +510,8 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           </div>
         </div>
 
-        {/* ── CENTER FEED ── */}
+        }
+          workOrders={
         <div className="lp-feed">
 
           {standaloneEstimates && standaloneEstimates.length > 0 && (
@@ -510,7 +568,8 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
           )}
         </div>
 
-        {/* ── RIGHT ACTION PANEL ── */}
+        }
+          payments={
         <div className="lp-action no-print">
 
           {/* Pending payments */}
@@ -618,6 +677,8 @@ export default async function LandlordPortalPage({ params }: LandlordPageProps) 
             </div>
           ))}
         </div>
+          }
+        />
       </div>
     </main>
   )
