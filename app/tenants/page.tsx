@@ -26,18 +26,25 @@ export default async function TenantsPage() {
 
   // Load unread message counts per tenant
   const tenantIds = (tenants || []).map(t => t.id)
-  const { data: unreadRows } = tenantIds.length
+
+  // Load all messages + compute unread counts per tenant
+  const { data: allMessages } = tenantIds.length
     ? await supabase
         .from('tenant_messages')
-        .select('tenant_id')
+        .select('id, tenant_id, sender, body, read_at, created_at')
         .in('tenant_id', tenantIds)
-        .eq('sender', 'tenant')
-        .is('read_at', null)
+        .order('created_at', { ascending: true })
     : { data: [] }
 
+  type MsgRow = { id: string; tenant_id: string; sender: string; body: string; read_at: string | null; created_at: string }
+  const messagesByTenant: Record<string, MsgRow[]> = {}
   const unreadByTenant: Record<string, number> = {}
-  for (const row of unreadRows || []) {
-    unreadByTenant[row.tenant_id] = (unreadByTenant[row.tenant_id] || 0) + 1
+  for (const m of (allMessages ?? []) as MsgRow[]) {
+    if (!messagesByTenant[m.tenant_id]) messagesByTenant[m.tenant_id] = []
+    messagesByTenant[m.tenant_id].push(m)
+    if (m.sender === 'tenant' && !m.read_at) {
+      unreadByTenant[m.tenant_id] = (unreadByTenant[m.tenant_id] || 0) + 1
+    }
   }
 
   // Load recent tickets submitted by tenants
@@ -62,8 +69,14 @@ export default async function TenantsPage() {
 
   return (
     <main style={{ padding: '28px 20px 60px', maxWidth: 860, margin: '0 auto' }}>
+      {/* Back link */}
+      <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textDecoration: 'none', marginBottom: 20 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Dashboard
+      </Link>
+
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+      <div className="tenants-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Tenants</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
@@ -135,7 +148,7 @@ export default async function TenantsPage() {
                   </div>
 
                   {/* Stats bar */}
-                  <div style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg)', display: 'flex' }}>
+                  <div className="tenants-stats-bar" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg)', display: 'flex' }}>
                     <div style={{ flex: 1, padding: '10px 20px', borderRight: '1px solid var(--border)' }}>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Open Requests</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: openTickets.length > 0 ? 'var(--purple)' : 'var(--text-muted)' }}>{openTickets.length}</div>
@@ -168,7 +181,13 @@ export default async function TenantsPage() {
                   )}
 
                   {/* Messages panel + actions */}
-                  <TenantMessagesPanel tenantId={tenant.id} tenantToken={tenant.tenant_token} tenantName={tenant.name} hasUnread={unread > 0} />
+                  <TenantMessagesPanel
+                    tenantId={tenant.id}
+                    tenantToken={tenant.tenant_token}
+                    tenantName={tenant.name}
+                    hasUnread={unread > 0}
+                    messages={(messagesByTenant[tenant.id] ?? []) as { id: string; sender: 'tenant' | 'manager'; body: string; read_at: string | null; created_at: string }[]}
+                  />
                 </div>
               )
             })}

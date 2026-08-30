@@ -39,7 +39,7 @@ export default function PaymentModalWrapper({
   return (
     <>
       {/* Summary stats */}
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:28 }}>
+      <div className="tenants-stats-grid" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:28 }}>
         {[
           { label:'Monthly rent total',   value:`$${tenants.reduce((s,t)=>s+t.rent_amount,0).toLocaleString('en-US',{minimumFractionDigits:2})}`,     note:`${tenants.length} active tenant${tenants.length!==1?'s':''}` },
           { label:`Collected — ${monthLabel}`, value:`$${tenants.filter(t=>t.payment).reduce((s,t)=>s+Number(t.payment!.amount),0).toLocaleString('en-US',{minimumFractionDigits:2})}`, note:`${tenants.filter(t=>t.payment).length} of ${tenants.length} paid` },
@@ -70,7 +70,7 @@ export default function PaymentModalWrapper({
                   <span style={{ fontWeight:700,color:'var(--text)' }}>${t.rent_amount.toLocaleString('en-US',{minimumFractionDigits:2})}/mo</span>
                 </div>
               </div>
-              <div style={{ display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',justifyContent:'flex-end' }}>
+              <div className="tenants-tenant-actions" style={{ display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',justifyContent:'flex-end' }}>
                 {statusChip(t.payment, t.rent_amount, t.rent_due_day)}
                 <button onClick={() => setModalTenant(t)} style={{ background:'linear-gradient(135deg,var(--purple),var(--purple-mid))',color:'#fff',border:'none',borderRadius:10,padding:'9px 15px',fontSize:12,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap' }}>
                   + Record Payment

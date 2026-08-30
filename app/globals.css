@@ -108,6 +108,17 @@ a:hover {
   .dashboard-grid { grid-template-columns: 1fr !important; }
 }
 
+/* Tenants page — mobile */
+@media (max-width: 640px) {
+  .tenants-stats-grid { grid-template-columns: 1fr !important; }
+  .tenants-tenant-actions { flex-direction: column !important; align-items: stretch !important; }
+  .tenants-tenant-actions > * { width: 100% !important; justify-content: center !important; }
+  .tenants-stats-bar { flex-direction: column !important; }
+  .tenants-stats-bar > div { border-right: none !important; border-bottom: 1px solid var(--border); }
+  .tenants-stats-bar > div:last-child { border-bottom: none !important; }
+  .tenants-header-row { flex-direction: column !important; align-items: flex-start !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kpi-seg, .kpi-bar, .kpi-fill, .kpi-fade { animation: none; }
   .kpi-card-lift { transition: none; }
