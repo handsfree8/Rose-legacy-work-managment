@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createBrowserSupabase } from '@/lib/supabase/browser'
 
 type SiteHeaderProps = {
@@ -101,7 +102,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
           flexWrap: 'wrap',
         }}
       >
-        <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
           <img
             src="/logo.png"
             alt="Rose Legacy logo"
@@ -111,29 +112,29 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
             <span style={{ color: 'var(--text)', fontWeight: 700, fontSize: '20px' }}>Rose Legacy</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '13px', letterSpacing: '0.04em' }}>Work Management</span>
           </span>
-        </a>
+        </Link>
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <a href="/" style={navLink(!!isProperties)}>Properties</a>
+          <Link href="/" style={navLink(!!isProperties)}>Properties</Link>
 
-          <a href="/dashboard" style={navLink(!!isDashboard)}>Dashboard</a>
+          <Link href="/dashboard" style={navLink(!!isDashboard)}>Dashboard</Link>
 
-          <a href="/users" style={navLink(!!isUsers)}>Users</a>
+          <Link href="/users" style={navLink(!!isUsers)}>Users</Link>
 
-          <a href="/tenants" style={navLink(!!isTenants)}>Tenants</a>
+          <Link href="/tenants" style={navLink(!!isTenants)}>Tenants</Link>
 
-          <a href="/open-tickets" style={navLink(!!isOpenTickets)}>
+          <Link href="/open-tickets" style={navLink(!!isOpenTickets)}>
             Open Tickets
             {openCount != null && openCount > 0 && <span style={badge(openCount, 'purple')}>{openCount}</span>}
-          </a>
+          </Link>
 
           {/* Landlord questions inbox */}
-          <a href="/inbox" style={navLink(pathname?.startsWith('/inbox') ?? false)} title="Landlord questions">
+          <Link href="/inbox" style={navLink(pathname?.startsWith('/inbox') ?? false)} title="Landlord questions">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             {questionCount != null && questionCount > 0 && <span style={badge(questionCount, 'red')}>{questionCount}</span>}
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/new-ticket"
             style={{
               textDecoration: 'none',
@@ -150,7 +151,7 @@ export default function SiteHeader({ invoiceAppUrl }: SiteHeaderProps) {
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Ticket
-          </a>
+          </Link>
 
           {invoiceAppUrl && (
             <a
