@@ -3,6 +3,7 @@ import Link from 'next/link'
 import TenantMessagesPanel from './TenantMessagesPanel'
 import { getCurrentMonthSummary, getPaymentHistory } from './actions'
 import PaymentModalWrapper from './PaymentModalWrapper'
+import ResolveButton from './ResolveButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,23 @@ export default async function TenantsPage() {
     if (!t.tenant_id) continue
     if (!ticketsByTenant[t.tenant_id]) ticketsByTenant[t.tenant_id] = []
     ticketsByTenant[t.tenant_id]!.push(t)
+  }
+
+  // Load tenant-uploaded photos for all tickets
+  const allTicketIds = (tickets || []).map(t => t.id)
+  const { data: ticketPhotos } = allTicketIds.length
+    ? await supabase
+        .from('ticket_photos')
+        .select('ticket_id, url')
+        .in('ticket_id', allTicketIds)
+        .eq('photo_type', 'tenant')
+    : { data: [] }
+
+  type PhotoRow = { ticket_id: string; url: string }
+  const photosByTicket: Record<string, string[]> = {}
+  for (const p of (ticketPhotos ?? []) as PhotoRow[]) {
+    if (!photosByTicket[p.ticket_id]) photosByTicket[p.ticket_id] = []
+    photosByTicket[p.ticket_id].push(p.url)
   }
 
   const totalUnread = Object.values(unreadByTenant).reduce((s, n) => s + n, 0)
@@ -171,10 +189,26 @@ export default async function TenantsPage() {
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Open Requests</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {openTickets.slice(0, 3).map(t => (
-                          <Link key={t.id} href={`/tickets/${t.id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, gap: 8 }}>
-                            <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>{t.title}</span>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', background: 'var(--purple-soft)', borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>{t.status.replace('_', ' ')}</span>
-                          </Link>
+                          <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                              <Link href={`/tickets/${t.id}`} style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, textDecoration: 'none', flex: 1 }}>{t.title}</Link>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', background: 'var(--purple-soft)', borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                                  {t.status.replace('_', ' ')}
+                                </span>
+                                <ResolveButton ticketId={t.id} />
+                              </div>
+                            </div>
+                            {(photosByTicket[t.id] ?? []).length > 0 && (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {(photosByTicket[t.id] ?? []).map((url, i) => (
+                                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                    <img src={url} alt="tenant photo" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

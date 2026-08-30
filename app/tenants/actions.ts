@@ -153,6 +153,14 @@ export async function getCurrentMonthSummary(): Promise<TenantSummaryRow[]> {
   })
 }
 
+export async function resolveTicket(ticketId: string): Promise<void> {
+  await supabase
+    .from('tickets')
+    .update({ status: 'completed' })
+    .eq('id', ticketId)
+  revalidatePath('/tenants')
+}
+
 export async function sendWelcomeEmail(
   formData: FormData
 ): Promise<{ ok: true } | { ok: false; error: string }> {
