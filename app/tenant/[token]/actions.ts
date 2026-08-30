@@ -33,6 +33,18 @@ export async function submitTenantTicket(formData: FormData): Promise<{ ticketId
   const tenant = await getTenantByToken(token)
   if (!tenant) throw new Error('Invalid portal link.')
 
+  // Rate limit: max 5 tickets per tenant per 24 hours
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { count: recentCount } = await supabase
+    .from('tickets')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id)
+    .gte('created_at', since)
+
+  if ((recentCount ?? 0) >= 5) {
+    throw new Error('Too many requests. Please wait before submitting another request.')
+  }
+
   const emergency = urgency === 'emergency'
   const priority  = urgency === 'emergency' ? 'high' : urgency === 'urgent' ? 'medium' : 'low'
 
@@ -115,6 +127,16 @@ export async function sendTenantMessage(formData: FormData) {
   const tenant = await getTenantByToken(token)
   if (!tenant) throw new Error('Invalid portal link.')
 
+  // Check before insert — if there are already unread messages, manager already knows
+  const { count: existingUnread } = await supabase
+    .from('tenant_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id)
+    .eq('sender', 'tenant')
+    .is('read_at', null)
+
+  const shouldNotify = (existingUnread ?? 0) === 0
+
   const { error } = await supabase.from('tenant_messages').insert({
     tenant_id: tenant.id,
     ticket_id: ticket_id || null,
@@ -125,7 +147,8 @@ export async function sendTenantMessage(formData: FormData) {
   if (error) throw new Error(error.message)
 
   // Notify manager by email (fire-and-forget — don't block the tenant's send)
-  resend.emails.send({
+  // Only send on the FIRST unread message — no spam per conversation
+  if (shouldNotify) resend.emails.send({
     from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
     to: MANAGER_EMAIL,
     subject: `New message from ${tenant.name}`,
@@ -143,7 +166,7 @@ export async function sendTenantMessage(formData: FormData) {
     </a>
   </div>
 </div>`,
-  }).catch(() => {}) // silent fail — don't affect tenant UX
+  })?.catch(() => {}) // silent fail — don't affect tenant UX
 
   revalidatePath(`/tenant/${token}`)
 }
