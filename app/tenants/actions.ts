@@ -83,7 +83,12 @@ export async function recordPayment(
 
   if (!tenantId) return { ok: false, error: 'Tenant is required.' }
   if (!year || !month) return { ok: false, error: 'Period is required.' }
+  if (month < 1 || month > 12) return { ok: false, error: 'Invalid month.' }
+  if (year < 2020 || year > 2100) return { ok: false, error: 'Invalid year.' }
   if (isNaN(amount) || amount <= 0) return { ok: false, error: 'Enter a valid amount.' }
+
+  const validMethods = ['check', 'cash', 'transfer']
+  if (!validMethods.includes(method)) return { ok: false, error: 'Invalid payment method.' }
 
   // Upsert so re-recording the same month replaces the existing row
   const { error } = await supabase
@@ -97,7 +102,6 @@ export async function recordPayment(
         method,
         status: 'paid',
         paid_at: paidAt,
-        ...(notes ? { stripe_payment_intent_id: null } : {}),
       },
       { onConflict: 'tenant_id,period_year,period_month' }
     )
