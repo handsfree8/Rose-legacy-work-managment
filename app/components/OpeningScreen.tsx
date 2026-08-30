@@ -6,7 +6,12 @@ import { useRouter, usePathname } from 'next/navigation'
 type Phase = 'animating' | 'choice' | 'resident-input' | 'done'
 
 export default function OpeningScreen() {
-  const [phase, setPhase] = useState<Phase | null>(null)
+  const [phase, setPhase] = useState<Phase | null>(() => {
+    try {
+      if (typeof window !== 'undefined' && sessionStorage.getItem('rl-opening-shown')) return 'done'
+    } catch {}
+    return null
+  })
   const [token, setToken] = useState('')
   const [tokenError, setTokenError] = useState('')
   const router = useRouter()
@@ -107,7 +112,11 @@ export default function OpeningScreen() {
     router.push(`/tenant/${tok}`)
   }
 
-  if (phase === null || phase === 'done' || isPortalRoute) return <></>
+  if (phase === 'done' || isPortalRoute) return <></>
+  // phase === null: render solid dark overlay instantly to prevent flash of content
+  if (phase === null) return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(160deg,#0d0618 0%,#1a0a2e 45%,#2d1060 100%)' }} />
+  )
 
   const reducedMotion =
     typeof window !== 'undefined'
