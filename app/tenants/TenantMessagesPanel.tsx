@@ -61,6 +61,19 @@ export default function TenantMessagesPanel({
 
     const supabase = createBrowserSupabase()
 
+    // Re-fetch messages to catch any sent while modal was closed
+    ;(async () => {
+      const { data: fresh } = await supabase
+        .from('tenant_messages')
+        .select('id, sender, body, read_at, created_at')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: true })
+
+      if (fresh) {
+        setMessages(fresh as Message[])
+      }
+    })()
+
     const channel = supabase
       .channel(`tenant-messages-${tenantId}`)
       .on(
