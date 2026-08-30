@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { replyToTenant } from './actions'
+import { replyToTenant, markMessagesRead } from './actions'
 
 type Message = {
   id: string
@@ -34,17 +34,20 @@ export default function TenantMessagesPanel({
   const [copied,   setCopied]   = useState(false)
   const [error,    setError]    = useState('')
   const [pending,  start]       = useTransition()
+  const [localHasUnread, setLocalHasUnread] = useState(hasUnread)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (open) {
+      setLocalHasUnread(false)
+      markMessagesRead(tenantId).catch(() => {})
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
         textareaRef.current?.focus()
       }, 80)
     }
-  }, [open])
+  }, [open, tenantId])
 
   function handleCopy() {
     const url = `${window.location.origin}/tenant/${tenantToken}`
@@ -88,8 +91,8 @@ export default function TenantMessagesPanel({
         <button
           onClick={() => setOpen(true)}
           style={{
-            background: hasUnread ? 'var(--purple)' : 'var(--purple-soft)',
-            color: hasUnread ? '#fff' : 'var(--purple)',
+            background: localHasUnread ? 'var(--purple)' : 'var(--purple-soft)',
+            color: localHasUnread ? '#fff' : 'var(--purple)',
             border: 'none', borderRadius: 8, padding: '8px 14px',
             fontSize: 12, fontWeight: 700, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
@@ -99,7 +102,7 @@ export default function TenantMessagesPanel({
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           {messages.length > 0 ? `Open Chat (${messages.length})` : 'Send a message'}
-          {hasUnread && (
+          {localHasUnread && (
             <span style={{ background: '#fff', color: 'var(--purple)', borderRadius: 20, padding: '1px 6px', fontSize: 10, fontWeight: 800 }}>
               NEW
             </span>
@@ -136,8 +139,8 @@ export default function TenantMessagesPanel({
         >
           <div style={{
             background: 'var(--bg)', width: '100%', maxWidth: 640,
-            height: '85vh', borderRadius: '20px 20px 0 0',
-            display: 'flex', flexDirection: 'column',
+            height: '88vh', maxHeight: 700, borderRadius: '20px 20px 0 0',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
             boxShadow: '0 -8px 48px rgba(0,0,0,.25)',
           }}>
             {/* Modal header */}
@@ -172,7 +175,7 @@ export default function TenantMessagesPanel({
             </div>
 
             {/* Message thread */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {messages.length === 0 && (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '48px 0' }}>
                   No messages yet. Send the first one below.
@@ -204,7 +207,7 @@ export default function TenantMessagesPanel({
             </div>
 
             {/* Reply input */}
-            <div style={{ padding: '12px 16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+            <div style={{ padding: '12px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               {error && <div style={{ fontSize: 12, color: '#b91c1c', marginBottom: 6 }}>{error}</div>}
               <form onSubmit={handleSend} style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
                 <textarea

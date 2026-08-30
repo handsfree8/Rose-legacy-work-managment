@@ -24,6 +24,15 @@ export type TenantSummaryRow = {
   payment: PaymentRow | null
 }
 
+export async function markMessagesRead(tenantId: string) {
+  await supabase
+    .from('tenant_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('tenant_id', tenantId)
+    .eq('sender', 'tenant')
+    .is('read_at', null)
+}
+
 export async function replyToTenant(formData: FormData) {
   const tenant_id = String(formData.get('tenant_id') || '').trim()
   const body = String(formData.get('body') || '').trim()
