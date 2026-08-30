@@ -15,7 +15,7 @@ export default function OpeningScreen() {
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Never show on landlord or tenant portals
-  const isPortalRoute = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant')
+  const isPortalRoute = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant') || pathname === '/login'
 
   const INACTIVITY_MS = 3 * 60 * 1000 // 3 minutes
 
@@ -66,8 +66,8 @@ export default function OpeningScreen() {
 
   function goManager() {
     try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
-    setPhase('done')
     router.push('/login')
+    // Keep overlay visible during navigation — it hides automatically when pathname === '/login'
   }
 
   function goResidentInput() {
