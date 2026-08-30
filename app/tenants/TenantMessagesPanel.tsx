@@ -167,16 +167,16 @@ export default function TenantMessagesPanel({
           style={{
             position: 'fixed', inset: 0, zIndex: 60,
             background: 'rgba(15,10,26,.55)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            padding: '0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '16px',
           }}
           onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
         >
           <div style={{
-            background: 'var(--bg)', width: '100%', maxWidth: 640,
-            height: '88vh', maxHeight: 700, borderRadius: '20px 20px 0 0',
+            background: 'var(--bg)', width: '100%', maxWidth: 560,
+            height: '80vh', maxHeight: 680, borderRadius: 20,
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '0 -8px 48px rgba(0,0,0,.25)',
+            boxShadow: '0 24px 64px rgba(0,0,0,.35)',
           }}>
             {/* Modal header */}
             <div style={{
