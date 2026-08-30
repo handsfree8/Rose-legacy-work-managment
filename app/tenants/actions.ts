@@ -31,6 +31,24 @@ export async function markMessagesRead(tenantId: string) {
     .eq('tenant_id', tenantId)
     .eq('sender', 'tenant')
     .is('read_at', null)
+  revalidatePath('/tenants')
+}
+
+export type MessageRow = {
+  id: string
+  sender: 'tenant' | 'manager'
+  body: string
+  read_at: string | null
+  created_at: string
+}
+
+export async function fetchTenantMessages(tenantId: string): Promise<MessageRow[]> {
+  const { data } = await supabase
+    .from('tenant_messages')
+    .select('id, sender, body, read_at, created_at')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: true })
+  return (data ?? []) as MessageRow[]
 }
 
 export async function replyToTenant(formData: FormData) {

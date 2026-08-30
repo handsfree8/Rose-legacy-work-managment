@@ -127,15 +127,18 @@ export async function sendTenantMessage(formData: FormData) {
   const tenant = await getTenantByToken(token)
   if (!tenant) throw new Error('Invalid portal link.')
 
-  // Check before insert — if there are already unread messages, manager already knows
-  const { count: existingUnread } = await supabaseAdmin
+  // Only notify once per 5-minute window — prevents email spam during active conversations
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: recentMsg } = await supabaseAdmin
     .from('tenant_messages')
-    .select('id', { count: 'exact', head: true })
+    .select('id')
     .eq('tenant_id', tenant.id)
     .eq('sender', 'tenant')
-    .is('read_at', null)
+    .gte('created_at', fiveMinAgo)
+    .limit(1)
+    .maybeSingle()
 
-  const shouldNotify = (existingUnread ?? 0) === 0
+  const shouldNotify = !recentMsg
 
   const { error } = await supabaseAdmin.from('tenant_messages').insert({
     tenant_id: tenant.id,

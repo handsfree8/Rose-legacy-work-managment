@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { replyToTenant, markMessagesRead, sendWelcomeEmail } from './actions'
+import { replyToTenant, markMessagesRead, sendWelcomeEmail, fetchTenantMessages } from './actions'
 import { createBrowserSupabase } from '@/lib/supabase/browser'
 
 type Message = {
@@ -39,6 +39,11 @@ export default function TenantMessagesPanel({
   const [error,    setError]    = useState('')
   const [pending,  start]       = useTransition()
   const [localHasUnread, setLocalHasUnread] = useState(hasUnread)
+
+  // Sync badge when server reports a new unread (never force-clear from props — only open chat clears it)
+  useEffect(() => {
+    if (hasUnread) setLocalHasUnread(true)
+  }, [hasUnread])
   const [emailSent,    setEmailSent]    = useState(false)
   const [emailPending, startEmailTrans] = useTransition()
   const [emailError,   setEmailError]   = useState('')
@@ -59,20 +64,13 @@ export default function TenantMessagesPanel({
   useEffect(() => {
     if (!open) return
 
+    // Re-fetch via server action (uses supabaseAdmin, bypasses RLS) to catch messages sent while modal was closed
+    fetchTenantMessages(tenantId).then(fresh => {
+      setMessages(fresh)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80)
+    }).catch(() => {})
+
     const supabase = createBrowserSupabase()
-
-    // Re-fetch messages to catch any sent while modal was closed
-    ;(async () => {
-      const { data: fresh } = await supabase
-        .from('tenant_messages')
-        .select('id, sender, body, read_at, created_at')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: true })
-
-      if (fresh) {
-        setMessages(fresh as Message[])
-      }
-    })()
 
     const channel = supabase
       .channel(`tenant-messages-${tenantId}`)
