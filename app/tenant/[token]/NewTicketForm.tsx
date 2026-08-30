@@ -37,13 +37,15 @@ export default function NewTicketForm({ token, onClose }: { token: string; onClo
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 50,
-      background: 'rgba(26,22,37,.55)', backdropFilter: 'blur(3px)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      background: 'rgba(26,22,37,.55)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '16px',
     }}>
       <div style={{
-        background: 'var(--bg)', borderRadius: '20px 20px 0 0',
-        width: '100%', maxWidth: 480, maxHeight: '92dvh',
-        overflow: 'auto', padding: '24px 20px 32px',
+        background: 'var(--bg)', borderRadius: 20,
+        width: '100%', maxWidth: 640, maxHeight: '92dvh',
+        overflow: 'auto', padding: '28px 32px 36px',
+        boxShadow: '0 24px 64px rgba(0,0,0,.35)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
