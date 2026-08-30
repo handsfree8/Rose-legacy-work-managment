@@ -18,7 +18,7 @@ export default async function TenantsPage() {
   const { data: tenants } = await supabase
     .from('tenants')
     .select(`
-      id, name, unit, rent_amount, rent_due_day, active, tenant_token, lease_end,
+      id, name, unit, email, rent_amount, rent_due_day, active, tenant_token, lease_end,
       properties(id, name, address, city, state)
     `)
     .eq('active', true)
@@ -187,6 +187,8 @@ export default async function TenantsPage() {
                     tenantName={tenant.name}
                     hasUnread={unread > 0}
                     messages={(messagesByTenant[tenant.id] ?? []) as { id: string; sender: 'tenant' | 'manager'; body: string; read_at: string | null; created_at: string }[]}
+                  tenantEmail={tenant.email ?? null}
+                  portalUrl={`${process.env.NEXT_PUBLIC_APP_URL}/tenant/${tenant.tenant_token}`}
                   />
                 </div>
               )

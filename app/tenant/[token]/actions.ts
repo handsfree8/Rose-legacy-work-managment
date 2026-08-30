@@ -21,7 +21,7 @@ async function getTenantByToken(token: string) {
 
 // ── submit a new maintenance ticket ──────────────────────────────────────────
 
-export async function submitTenantTicket(formData: FormData) {
+export async function submitTenantTicket(formData: FormData): Promise<{ ticketId: string }> {
   const token    = String(formData.get('token') || '').trim()
   const title    = String(formData.get('title') || '').trim()
   const body     = String(formData.get('body') || '').trim()
@@ -36,7 +36,7 @@ export async function submitTenantTicket(formData: FormData) {
   const emergency = urgency === 'emergency'
   const priority  = urgency === 'emergency' ? 'high' : urgency === 'urgent' ? 'medium' : 'low'
 
-  const { error } = await supabase.from('tickets').insert({
+  const { data, error } = await supabase.from('tickets').insert({
     property_id:  tenant.property_id,
     tenant_id:    tenant.id,
     title,
@@ -47,11 +47,59 @@ export async function submitTenantTicket(formData: FormData) {
     status:       'new',
     unit_number:  tenant.unit ?? null,
     tenant_name:  tenant.name,
-  })
+  }).select('id').single()
 
   if (error) throw new Error(error.message)
 
   revalidatePath(`/tenant/${token}`)
+  return { ticketId: data.id }
+}
+
+export async function uploadTenantTicketPhoto(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const token    = String(formData.get('token') || '').trim()
+  const ticketId = String(formData.get('ticket_id') || '').trim()
+  const file     = formData.get('file')
+
+  if (!token || !ticketId) return { ok: false, error: 'Missing required fields.' }
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: 'No file selected.' }
+  if (file.size > 10 * 1024 * 1024) return { ok: false, error: 'File too large (max 10 MB).' }
+  if (!['image/jpeg','image/png','image/webp','image/heic'].includes(file.type)) {
+    return { ok: false, error: 'Only JPEG, PNG, WEBP, or HEIC images allowed.' }
+  }
+
+  const tenant = await getTenantByToken(token)
+  if (!tenant) return { ok: false, error: 'Invalid portal link.' }
+
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('id')
+    .eq('id', ticketId)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle()
+
+  if (!ticket) return { ok: false, error: 'Ticket not found.' }
+
+  const ext = file.name.split('.').pop() || 'jpg'
+  const fileName = `${ticketId}/tenant-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('property_images')
+    .upload(fileName, file, { contentType: file.type })
+
+  if (uploadError) return { ok: false, error: uploadError.message }
+
+  const { data: urlData } = supabase.storage.from('property_images').getPublicUrl(fileName)
+
+  const { error: insertError } = await supabase.from('ticket_photos').insert({
+    ticket_id: ticketId,
+    url: urlData.publicUrl,
+    photo_type: 'tenant',
+  })
+
+  if (insertError) return { ok: false, error: insertError.message }
+  return { ok: true }
 }
 
 // ── send a message ────────────────────────────────────────────────────────────

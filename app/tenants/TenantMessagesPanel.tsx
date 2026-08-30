@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { replyToTenant, markMessagesRead } from './actions'
+import { replyToTenant, markMessagesRead, sendWelcomeEmail } from './actions'
 
 type Message = {
   id: string
@@ -21,12 +21,15 @@ export default function TenantMessagesPanel({
   tenantName,
   hasUnread,
   messages: initialMessages,
+  tenantEmail,
 }: {
   tenantId: string
   tenantToken: string
   tenantName: string
   hasUnread: boolean
   messages: Message[]
+  tenantEmail: string | null
+  portalUrl: string
 }) {
   const [open,     setOpen]     = useState(false)
   const [messages, setMessages] = useState(initialMessages)
@@ -35,6 +38,9 @@ export default function TenantMessagesPanel({
   const [error,    setError]    = useState('')
   const [pending,  start]       = useTransition()
   const [localHasUnread, setLocalHasUnread] = useState(hasUnread)
+  const [emailSent,    setEmailSent]    = useState(false)
+  const [emailPending, startEmailTrans] = useTransition()
+  const [emailError,   setEmailError]   = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -48,6 +54,21 @@ export default function TenantMessagesPanel({
       }, 80)
     }
   }, [open, tenantId])
+
+  function handleWelcomeEmail() {
+    setEmailError('')
+    const fd = new FormData()
+    fd.set('tenant_id', tenantId)
+    startEmailTrans(async () => {
+      const res = await sendWelcomeEmail(fd)
+      if (res.ok) {
+        setEmailSent(true)
+        setTimeout(() => setEmailSent(false), 4000)
+      } else {
+        setEmailError(res.error)
+      }
+    })
+  }
 
   function handleCopy() {
     const url = `${window.location.origin}/tenant/${tenantToken}`
@@ -124,6 +145,20 @@ export default function TenantMessagesPanel({
           </svg>
           {copied ? 'Copied!' : 'Copy portal link'}
         </button>
+
+        {tenantEmail && (
+          <button onClick={handleWelcomeEmail} disabled={emailPending || emailSent} style={{
+            background: emailSent ? '#f0fdf4' : 'transparent',
+            color: emailSent ? '#16a34a' : 'var(--text-muted)',
+            border: '1px solid var(--border)', borderRadius: 8, padding: '7px 12px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            opacity: emailPending ? .6 : 1,
+          }}>
+            ✉ {emailSent ? 'Welcome email sent!' : emailPending ? '…' : 'Send welcome email'}
+          </button>
+        )}
+        {emailError && <div style={{ fontSize: 11, color: '#b91c1c', width: '100%' }}>{emailError}</div>}
       </div>
 
       {/* Full-screen chat modal */}

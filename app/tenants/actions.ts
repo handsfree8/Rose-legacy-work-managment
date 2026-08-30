@@ -152,3 +152,70 @@ export async function getCurrentMonthSummary(): Promise<TenantSummaryRow[]> {
     }
   })
 }
+
+export async function sendWelcomeEmail(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tenantId = formData.get('tenant_id')?.toString() || ''
+  if (!tenantId) return { ok: false, error: 'Missing tenant.' }
+
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('name, email, unit, rent_amount, rent_due_day, tenant_token, properties(address, city, state)')
+    .eq('id', tenantId)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (!tenant) return { ok: false, error: 'Tenant not found.' }
+  if (!tenant.email) return { ok: false, error: 'Tenant has no email on file.' }
+
+  const prop = Array.isArray(tenant.properties) ? tenant.properties[0] : tenant.properties
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/${tenant.tenant_token}`
+  const formatted = Number(tenant.rent_amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const { error } = await resend.emails.send({
+    from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
+    to: tenant.email,
+    subject: `Welcome to your tenant portal, ${tenant.name.split(' ')[0]}!`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+    <div style="background:linear-gradient(135deg,#1a0838,#4a2080);padding:32px 28px 28px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:10px;">Rose Legacy Home Solutions</div>
+      <div style="font-size:24px;font-weight:800;color:#fff;line-height:1.25;">Welcome to your<br>tenant portal 🏠</div>
+    </div>
+    <div style="padding:28px;">
+      <p style="font-size:15px;color:#111827;margin:0 0 18px;">Hi <strong>${tenant.name.split(' ')[0]}</strong>,</p>
+      <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 20px;">
+        Your tenant portal is now active. Use it to submit maintenance requests, send messages to your property manager, and check your payment status — anytime, from any device.
+      </p>
+      <div style="background:#f3eeff;border:1px solid #ddd6fe;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b21a8;margin-bottom:12px;">Your details</div>
+        ${prop ? `<div style="font-size:13px;color:#374151;margin-bottom:6px;">📍 ${prop.address}${prop.city ? `, ${prop.city}` : ''}${prop.state ? `, ${prop.state}` : ''}${tenant.unit ? ` · ${tenant.unit}` : ''}</div>` : ''}
+        <div style="font-size:13px;color:#374151;margin-bottom:6px;">💰 Monthly rent: <strong>${formatted}</strong></div>
+        <div style="font-size:13px;color:#374151;">📅 Due on the <strong>${tenant.rent_due_day}${tenant.rent_due_day === 1 ? 'st' : tenant.rent_due_day === 2 ? 'nd' : tenant.rent_due_day === 3 ? 'rd' : 'th'}</strong> of each month</div>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.5;">
+        Keep this link bookmarked — it's your personal portal link. Do not share it with others.
+      </p>
+      <a href="${portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#6b21a8,#7c3aed);color:#fff;text-decoration:none;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:700;">
+        Open My Portal →
+      </a>
+      <p style="font-size:11px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
+        Rose Legacy Home Solutions · Questions? Reply to this email or use the portal to send a message.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`,
+  })
+
+  if (error) return { ok: false, error: (error as { message?: string }).message ?? 'Failed to send.' }
+  return { ok: true }
+}
