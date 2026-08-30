@@ -22,7 +22,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
   const formatted = p.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
   await resend.emails.send({
-    from: 'Rose Legacy <onboarding@resend.dev>',
+    from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
     to: p.tenantEmail,
     subject: `Rent reminder: ${formatted} due ${monthName} ${p.dueDay}`,
     html: `
@@ -32,7 +32,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
 <body style="margin:0;padding:0;background:#f8f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
     <div style="background:linear-gradient(135deg,#1a0838,#4a2080);padding:28px 28px 24px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px;">Rose Legacy · Rent Reminder</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px;">Rose Legacy Home Solutions · Rent Reminder</div>
       <div style="font-size:22px;font-weight:800;color:#fff;">Your rent is due in 3 days</div>
     </div>
     <div style="padding:28px;">
@@ -54,7 +54,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
         View My Portal →
       </a>
       <p style="font-size:11px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
-        Rose Legacy Home Solutions · This is an automated reminder.
+        Rose Legacy Home Solutions · Automated reminder. Do not reply to this email.
       </p>
     </div>
   </div>
