@@ -14,8 +14,16 @@ export default function OpeningScreen() {
   const fallbackRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Never show on landlord or tenant portals
+  // Never show on landlord/tenant portals or login
   const isPortalRoute = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant') || pathname === '/login'
+
+  // When navigating away from /login back into the app, mark as done so overlay stays hidden
+  useEffect(() => {
+    if (!pathname || isPortalRoute) return
+    try {
+      if (sessionStorage.getItem('rl-opening-shown')) setPhase('done')
+    } catch {}
+  }, [pathname, isPortalRoute])
 
   const INACTIVITY_MS = 3 * 60 * 1000 // 3 minutes
 
