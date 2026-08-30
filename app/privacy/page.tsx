@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px", lineHeight: 1.6 }}>
       <h1>Privacy Policy</h1>
-      <p>Last updated: June 2026</p>
+      <p>Last updated: August 2026</p>
 
       <p>
         Rose Legacy Home Solutions LLC ("Rose Legacy", "we", "us") operates the Rose Legacy mobile
@@ -27,6 +27,14 @@ export default function PrivacyPolicyPage() {
         Information is used solely to operate the Services: managing properties, tracking
         maintenance tickets, documenting work with photos, and generating invoices. We do not
         sell or share your information with third parties for marketing purposes.
+      </p>
+
+      <h2>Payments</h2>
+      <p>
+        Card payments for invoices are processed by Stripe, Inc. When a client chooses to pay by
+        card, they are directed to Stripe's secure hosted page to enter their payment details. We
+        never see or store full card numbers; Stripe handles that information under its own privacy
+        policy. We receive only the payment status (for example, paid or pending).
       </p>
 
       <h2>Data Storage</h2>
