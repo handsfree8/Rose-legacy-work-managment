@@ -24,21 +24,6 @@ export type TenantSummaryRow = {
   payment: PaymentRow | null
 }
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
-
 export async function replyToTenant(formData: FormData) {
   const tenant_id = String(formData.get('tenant_id') || '').trim()
   const body = String(formData.get('body') || '').trim()
@@ -158,5 +143,3 @@ export async function getCurrentMonthSummary(): Promise<TenantSummaryRow[]> {
     }
   })
 }
-
-export { MONTHS }
