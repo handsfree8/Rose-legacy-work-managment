@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -10,7 +10,7 @@ const MANAGER_EMAIL = 'cristofer_marquez_lopez@hotmail.com'
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function getTenantByToken(token: string) {
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('tenants')
     .select('id, property_id, name, unit, active, properties(name, address, city, state)')
     .eq('tenant_token', token)
@@ -35,7 +35,7 @@ export async function submitTenantTicket(formData: FormData): Promise<{ ticketId
 
   // Rate limit: max 5 tickets per tenant per 24 hours
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count: recentCount } = await supabase
+  const { count: recentCount } = await supabaseAdmin
     .from('tickets')
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenant.id)
@@ -48,7 +48,7 @@ export async function submitTenantTicket(formData: FormData): Promise<{ ticketId
   const emergency = urgency === 'emergency'
   const priority  = urgency === 'emergency' ? 'high' : urgency === 'urgent' ? 'medium' : 'low'
 
-  const { data, error } = await supabase.from('tickets').insert({
+  const { data, error } = await supabaseAdmin.from('tickets').insert({
     property_id:  tenant.property_id,
     tenant_id:    tenant.id,
     title,
@@ -84,7 +84,7 @@ export async function uploadTenantTicketPhoto(
   const tenant = await getTenantByToken(token)
   if (!tenant) return { ok: false, error: 'Invalid portal link.' }
 
-  const { data: ticket } = await supabase
+  const { data: ticket } = await supabaseAdmin
     .from('tickets')
     .select('id')
     .eq('id', ticketId)
@@ -96,15 +96,15 @@ export async function uploadTenantTicketPhoto(
   const ext = file.name.split('.').pop() || 'jpg'
   const fileName = `${ticketId}/tenant-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabaseAdmin.storage
     .from('property_images')
     .upload(fileName, file, { contentType: file.type })
 
   if (uploadError) return { ok: false, error: uploadError.message }
 
-  const { data: urlData } = supabase.storage.from('property_images').getPublicUrl(fileName)
+  const { data: urlData } = supabaseAdmin.storage.from('property_images').getPublicUrl(fileName)
 
-  const { error: insertError } = await supabase.from('ticket_photos').insert({
+  const { error: insertError } = await supabaseAdmin.from('ticket_photos').insert({
     ticket_id: ticketId,
     url: urlData.publicUrl,
     photo_type: 'tenant',
@@ -128,7 +128,7 @@ export async function sendTenantMessage(formData: FormData) {
   if (!tenant) throw new Error('Invalid portal link.')
 
   // Check before insert — if there are already unread messages, manager already knows
-  const { count: existingUnread } = await supabase
+  const { count: existingUnread } = await supabaseAdmin
     .from('tenant_messages')
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenant.id)
@@ -137,7 +137,7 @@ export async function sendTenantMessage(formData: FormData) {
 
   const shouldNotify = (existingUnread ?? 0) === 0
 
-  const { error } = await supabase.from('tenant_messages').insert({
+  const { error } = await supabaseAdmin.from('tenant_messages').insert({
     tenant_id: tenant.id,
     ticket_id: ticket_id || null,
     sender:    'tenant',
@@ -166,7 +166,7 @@ export async function sendTenantMessage(formData: FormData) {
     </a>
   </div>
 </div>`,
-  })?.catch(() => {}) // silent fail — don't affect tenant UX
+  }).catch(() => {}) // silent fail — don't affect tenant UX
 
   revalidatePath(`/tenant/${token}`)
 }
