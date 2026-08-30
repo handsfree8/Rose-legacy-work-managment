@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { replyToTenant, markMessagesRead, sendWelcomeEmail } from './actions'
+import { createBrowserSupabase } from '@/lib/supabase/browser'
 
 type Message = {
   id: string
@@ -52,6 +53,37 @@ export default function TenantMessagesPanel({
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
         textareaRef.current?.focus()
       }, 80)
+    }
+  }, [open, tenantId])
+
+  useEffect(() => {
+    if (!open) return
+
+    const supabase = createBrowserSupabase()
+
+    const channel = supabase
+      .channel(`tenant-messages-${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tenant_messages',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   }, [open, tenantId])
 
