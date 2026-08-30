@@ -114,6 +114,20 @@ export async function uploadTenantTicketPhoto(
   return { ok: true }
 }
 
+// ── mark manager messages as read (tenant opened the Messages tab) ───────────
+
+export async function markManagerMessagesRead(token: string) {
+  const tenant = await getTenantByToken(token)
+  if (!tenant) return
+  await supabaseAdmin
+    .from('tenant_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('tenant_id', tenant.id)
+    .eq('sender', 'manager')
+    .is('read_at', null)
+  revalidatePath(`/tenant/${token}`)
+}
+
 // ── send a message ────────────────────────────────────────────────────────────
 
 export async function sendTenantMessage(formData: FormData) {

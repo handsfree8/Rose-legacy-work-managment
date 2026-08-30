@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import NewTicketForm from './NewTicketForm'
 import MessageThread from './MessageThread'
+import { markManagerMessagesRead } from './actions'
 
 type Ticket = {
   id: string
@@ -81,7 +82,16 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
   const [tab,           setTab]           = useState<'home' | 'tickets' | 'messages' | 'payments'>('home')
   const [showNewTicket, setShowNewTicket] = useState(false)
 
-  const unread = messages.filter(m => m.sender === 'manager' && !m.read_at).length
+  const unreadFromServer = messages.filter(m => m.sender === 'manager' && !m.read_at).length
+  const [unread, setUnread] = useState(unreadFromServer)
+
+  function goMessages() {
+    setTab('messages')
+    if (unread > 0) {
+      setUnread(0)
+      markManagerMessagesRead(token).catch(() => {})
+    }
+  }
   const prop   = tenant.properties
 
   return (
@@ -295,7 +305,7 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
           <button className="tp-sidebar-action" onClick={() => setShowNewTicket(true)}>
             + New Request
           </button>
-          <button className="tp-sidebar-action-ghost" onClick={() => setTab('messages')}>
+          <button className="tp-sidebar-action-ghost" onClick={goMessages}>
             Messages
             {unread > 0 && (
               <span style={{ background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 10, fontWeight: 800, padding: '2px 7px', flexShrink: 0 }}>
@@ -322,15 +332,17 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
             ] as const).map(t => (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
+                onClick={() => t.key === 'messages' ? goMessages() : setTab(t.key)}
                 className={`tp-tab${tab === t.key ? ' active' : ''}`}
               >
-                {t.label}
-                {'badge' in t && t.badge > 0 && (
-                  <span style={{ position: 'absolute', top: 8, right: '50%', transform: 'translateX(24px)', background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 9, fontWeight: 800, padding: '1px 5px' }}>
-                    {t.badge}
-                  </span>
-                )}
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                  {t.label}
+                  {'badge' in t && t.badge > 0 && (
+                    <span style={{ background: '#dc2626', color: '#fff', borderRadius: 20, fontSize: 9, fontWeight: 800, padding: '1px 5px', lineHeight: 1.4, display: 'inline-block' }}>
+                      {t.badge}
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -358,7 +370,7 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>New Request</div>
                     </button>
                     <button
-                      onClick={() => setTab('messages')}
+                      onClick={goMessages}
                       style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 16px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow)', cursor: 'pointer' }}
                     >
                       <div style={{ width: 40, height: 40, borderRadius: 11, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
