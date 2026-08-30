@@ -23,6 +23,16 @@ type Message = {
   ticket_id: string | null
 }
 
+type PaymentRow = {
+  id: string
+  period_year: number
+  period_month: number
+  amount: number
+  method: string
+  paid_at: string
+  status: string
+}
+
 type Tenant = {
   name: string
   unit: string | null
@@ -60,14 +70,15 @@ function rentDueDate(dueDay: number) {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
-export default function TenantPortalClient({ tenant, token, tickets, messages, managerName }: {
+export default function TenantPortalClient({ tenant, token, tickets, messages, managerName, payments }: {
   tenant: Tenant
   token: string
   tickets: Ticket[]
   messages: Message[]
   managerName: string
+  payments: PaymentRow[]
 }) {
-  const [tab,           setTab]           = useState<'home' | 'tickets' | 'messages'>('home')
+  const [tab,           setTab]           = useState<'home' | 'tickets' | 'messages' | 'payments'>('home')
   const [showNewTicket, setShowNewTicket] = useState(false)
 
   const unread = messages.filter(m => m.sender === 'manager' && !m.read_at).length
@@ -293,9 +304,8 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
             )}
           </button>
 
-          {/* Online payments notice — pushed to bottom on desktop */}
           <div style={{ marginTop: 'auto', paddingTop: 24, fontSize: 11, color: 'rgba(255,255,255,.32)', lineHeight: 1.5 }}>
-            💳 Online payments coming soon
+            Rose Legacy Homes
           </div>
         </div>
 
@@ -308,6 +318,7 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
               { key: 'home',     label: 'Home' },
               { key: 'tickets',  label: 'My Requests' },
               { key: 'messages', label: 'Messages', badge: unread },
+              { key: 'payments', label: 'Payments' },
             ] as const).map(t => (
               <button
                 key={t.key}
@@ -423,6 +434,89 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
             {tab === 'messages' && (
               <MessageThread token={token} messages={messages} managerName={managerName} />
             )}
+
+            {/* PAYMENTS */}
+            {tab === 'payments' && (() => {
+              const now = new Date()
+              const curYear = now.getFullYear()
+              const curMonth = now.getMonth() + 1
+              const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              const currentPayment = payments.find(p => p.period_year === curYear && p.period_month === curMonth)
+              const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+              return (
+                <div style={{ padding: '28px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* Current month card */}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 13 }}>
+                      Current Month · {monthName}
+                    </div>
+                    {currentPayment ? (
+                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius)', padding: '20px 20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#15803d' }}>Rent Paid</div>
+                          <div style={{ fontSize: 13, color: '#166534', marginTop: 4 }}>
+                            ${currentPayment.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} · {currentPayment.method}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3 }}>
+                            Recorded {formatDate(currentPayment.paid_at)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--radius)', padding: '20px 20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 18 }}>
+                          ⏳
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#92400e' }}>Payment Pending</div>
+                          <div style={{ fontSize: 13, color: '#78350f', marginTop: 4 }}>
+                            ${tenant.rent_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} due · Due day {tenant.rent_due_day}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#b45309', marginTop: 3 }}>
+                            No payment recorded for {monthName} yet.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment history */}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 13 }}>
+                      Payment History
+                    </div>
+                    {payments.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '40px 0' }}>
+                        No payment history yet.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {payments.map(p => (
+                          <div key={p.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                                {MONTHS[p.period_month - 1]} {p.period_year}
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                                {p.method} · {formatDate(p.paid_at)}
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#16a34a', whiteSpace: 'nowrap' }}>
+                              ${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

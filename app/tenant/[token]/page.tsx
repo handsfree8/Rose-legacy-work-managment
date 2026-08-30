@@ -54,6 +54,15 @@ export default async function TenantPortalPage({ params }: Props) {
       .then(() => {}) // intentional fire-and-forget
   }
 
+  // Load payment history for this tenant
+  const { data: payments } = await supabase
+    .from('rent_payments')
+    .select('id,period_year,period_month,amount,method,paid_at,status')
+    .eq('tenant_id', tenant.id)
+    .order('period_year', { ascending: false })
+    .order('period_month', { ascending: false })
+    .limit(24)
+
   // Manager name from access_groups or fallback
   const managerName = 'Christopher'
 
@@ -66,6 +75,7 @@ export default async function TenantPortalPage({ params }: Props) {
       tickets={tickets || []}
       messages={messages || []}
       managerName={managerName}
+      payments={payments ?? []}
     />
   )
 }
