@@ -83,11 +83,15 @@ function leaseRenewalInfo(leaseEnd: string | null): { daysLeft: number; newStart
   }
 }
 
-function rentDueDate(dueDay: number) {
+function nextDueDate(dueDay: number, payments: PaymentRow[]) {
   const now = new Date()
-  const d = new Date(now.getFullYear(), now.getMonth(), dueDay)
-  if (d < now) d.setMonth(d.getMonth() + 1)
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const currentPaid = payments.some(p => p.period_year === year && p.period_month === month && p.status === 'paid')
+  const base = currentPaid
+    ? new Date(year, now.getMonth() + 1, dueDay)
+    : new Date(year, now.getMonth(), dueDay)
+  return base.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 export default function TenantPortalClient({ tenant, token, tickets, messages, managerName, payments }: {
@@ -305,7 +309,7 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
               ${tenant.rent_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 5 }}>
-              Due {rentDueDate(tenant.rent_due_day)}
+              Due {nextDueDate(tenant.rent_due_day, payments)}
             </div>
           </div>
 
