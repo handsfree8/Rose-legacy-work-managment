@@ -64,6 +64,25 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function leaseRenewalInfo(leaseEnd: string | null): { daysLeft: number; newStart: string; newEnd: string } | null {
+  if (!leaseEnd) return null
+  const end = new Date(leaseEnd)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const daysLeft = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (daysLeft > 60) return null
+  const newStart = new Date(end)
+  newStart.setDate(newStart.getDate() + 1)
+  const newEnd = new Date(newStart)
+  newEnd.setFullYear(newEnd.getFullYear() + 1)
+  newEnd.setDate(newEnd.getDate() - 1)
+  return {
+    daysLeft,
+    newStart: newStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    newEnd:   newEnd.toLocaleDateString('en-US',   { month: 'long', day: 'numeric', year: 'numeric' }),
+  }
+}
+
 function rentDueDate(dueDay: number) {
   const now = new Date()
   const d = new Date(now.getFullYear(), now.getMonth(), dueDay)
@@ -92,7 +111,8 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
       markManagerMessagesRead(token).catch(() => {})
     }
   }
-  const prop   = tenant.properties
+  const prop    = tenant.properties
+  const renewal = leaseRenewalInfo(tenant.lease_end)
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -353,6 +373,31 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
             {/* HOME */}
             {tab === 'home' && (
               <div style={{ padding: '28px 28px 40px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Lease renewal notice */}
+                {renewal && (
+                  <div style={{
+                    background: renewal.daysLeft <= 14 ? '#fff7ed' : '#fefce8',
+                    border: `1.5px solid ${renewal.daysLeft <= 14 ? '#fb923c' : '#fbbf24'}`,
+                    borderRadius: 14,
+                    padding: '16px 20px',
+                    display: 'flex',
+                    gap: 14,
+                    alignItems: 'flex-start',
+                  }}>
+                    <span style={{ fontSize: 22, flexShrink: 0 }}>{renewal.daysLeft <= 14 ? '🔴' : '🟡'}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: renewal.daysLeft <= 14 ? '#c2410c' : '#92400e', marginBottom: 4 }}>
+                        Your lease expires in {renewal.daysLeft} day{renewal.daysLeft !== 1 ? 's' : ''}
+                      </div>
+                      <div style={{ fontSize: 12, color: renewal.daysLeft <= 14 ? '#9a3412' : '#78350f', lineHeight: 1.6 }}>
+                        Current lease ends <strong>{formatDate(tenant.lease_end!)}</strong>.<br />
+                        New lease period: <strong>{renewal.newStart}</strong> – <strong>{renewal.newEnd}</strong>.<br />
+                        Please contact your property manager to discuss renewal.
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Quick actions grid */}
                 <div>
