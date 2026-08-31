@@ -170,19 +170,27 @@ export async function sendTenantMessage(formData: FormData) {
     to: MANAGER_EMAIL,
     subject: `New message from ${tenant.name}`,
     html: `
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px 0;">
-  <div style="background:linear-gradient(135deg,#1a0838,#4a2080);border-radius:12px 12px 0 0;padding:20px 24px;">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px;">Rose Legacy Home Solutions</div>
-    <div style="font-size:18px;font-weight:800;color:#fff;">New message from ${tenant.name}</div>
-  </div>
-  <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
-    ${tenant.unit ? `<p style="margin:0 0 6px;font-size:12px;color:#6b7280;">Unit: ${tenant.unit}</p>` : ''}
-    <div style="background:#f3eeff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;font-size:14px;color:#111827;line-height:1.6;margin-bottom:20px;">${body}</div>
-    <a href="https://rose-legacy-work-management.vercel.app/tenants" style="display:inline-block;background:linear-gradient(135deg,#6b21a8,#7c3aed);color:#fff;text-decoration:none;border-radius:8px;padding:11px 20px;font-size:13px;font-weight:700;">
-      View in Manager Portal →
-    </a>
-  </div>
-</div>`,
+<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;background:#f5f3ff;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+      <tr>
+        <td style="background:#2d0e6e;border-radius:12px 12px 0 0;padding:20px 24px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;margin-bottom:6px;">Rose Legacy Home Solutions</div>
+          <div style="font-size:18px;font-weight:800;color:#ffffff;">New message from ${tenant.name}</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#ffffff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
+          ${tenant.unit ? `<p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Unit: ${tenant.unit}</p>` : ''}
+          <div style="background:#f3eeff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;font-size:14px;color:#111827;line-height:1.6;margin-bottom:20px;">${body}</div>
+          <a href="https://rose-legacy-work-management.vercel.app/tenants" style="display:inline-block;background:#6b21a8;color:#ffffff;text-decoration:none;border-radius:8px;padding:11px 20px;font-size:13px;font-weight:700;">
+            View in Manager Portal &rarr;
+          </a>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>`,
   }).catch(() => {}) // silent fail — don't affect tenant UX
 
   revalidatePath(`/tenant/${token}`)
