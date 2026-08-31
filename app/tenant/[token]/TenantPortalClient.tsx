@@ -499,9 +499,17 @@ export default function TenantPortalClient({ tenant, token, tickets, messages, m
             {/* PAYMENTS */}
             {tab === 'payments' && (() => {
               const now = new Date()
-              const curYear = now.getFullYear()
-              const curMonth = now.getMonth() + 1
-              const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              let curYear = now.getFullYear()
+              let curMonth = now.getMonth() + 1
+              // If current month has no payment but next month does, show next month (paid in advance)
+              const thisMonthPaid = payments.some(p => p.period_year === curYear && p.period_month === curMonth && p.status === 'paid')
+              if (!thisMonthPaid) {
+                const nextMonth = curMonth === 12 ? 1 : curMonth + 1
+                const nextYear  = curMonth === 12 ? curYear + 1 : curYear
+                const nextPaid  = payments.some(p => p.period_year === nextYear && p.period_month === nextMonth && p.status === 'paid')
+                if (nextPaid) { curMonth = nextMonth; curYear = nextYear }
+              }
+              const monthName = new Date(curYear, curMonth - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
               const currentPayment = payments.find(p => p.period_year === curYear && p.period_month === curMonth)
               const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
               return (
