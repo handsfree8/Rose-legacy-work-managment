@@ -203,7 +203,7 @@ export async function sendWelcomeEmail(
   const resend = new Resend(process.env.RESEND_API_KEY)
 
   const { error } = await resend.emails.send({
-    from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
+    from: 'Rose Legacy Home Solutions <no-reply@roselegacyhs.com>',
     to: tenant.email,
     subject: `Welcome to your tenant portal, ${tenant.name.split(' ')[0]}!`,
     html: `

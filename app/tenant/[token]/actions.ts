@@ -166,7 +166,7 @@ export async function sendTenantMessage(formData: FormData) {
   // Notify manager by email (fire-and-forget — don't block the tenant's send)
   // Only send on the FIRST unread message — no spam per conversation
   if (shouldNotify) resend.emails.send({
-    from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
+    from: 'Rose Legacy Home Solutions <no-reply@roselegacyhs.com>',
     to: MANAGER_EMAIL,
     subject: `New message from ${tenant.name}`,
     html: `
