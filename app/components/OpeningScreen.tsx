@@ -22,9 +22,14 @@ export default function OpeningScreen() {
   // Never show on landlord/tenant portals or login
   const isPortalRoute = pathname?.startsWith('/landlord') || pathname?.startsWith('/tenant') || pathname === '/login'
 
-  // When navigating away from /login back into the app, mark as done so overlay stays hidden
+  // On any app route other than root, the user is authenticated — always hide the overlay
   useEffect(() => {
     if (!pathname || isPortalRoute) return
+    if (pathname !== '/') {
+      try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
+      setPhase('done')
+      return
+    }
     try {
       if (sessionStorage.getItem('rl-opening-shown')) setPhase('done')
     } catch {}
@@ -38,10 +43,7 @@ export default function OpeningScreen() {
       try { sessionStorage.removeItem('rl-opening-shown') } catch {}
       setToken('')
       setTokenError('')
-      setPhase('animating')
-      // Restart the fallback timer for the new animation
-      if (fallbackRef.current) clearTimeout(fallbackRef.current)
-      fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
+      router.push('/')
     }, INACTIVITY_MS)
   }
 
