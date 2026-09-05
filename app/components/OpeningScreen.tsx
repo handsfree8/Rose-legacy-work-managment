@@ -35,7 +35,7 @@ export default function OpeningScreen() {
     } catch {}
   }, [pathname, isPortalRoute])
 
-  const INACTIVITY_MS = 3 * 60 * 1000 // 3 minutes
+  const INACTIVITY_MS = 15 * 60 * 1000 // 15 minutes
 
   function resetInactivity() {
     if (inactivityRef.current) clearTimeout(inactivityRef.current)
