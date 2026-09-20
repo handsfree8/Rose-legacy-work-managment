@@ -12,6 +12,21 @@ export type InvoiceRow = {
   payment_method: string | null
 }
 
+// Captured job cost (from the invoice app) — what's actually spent behind an invoice.
+export type JobCostRow = {
+  invoice_id: string | null
+  materials: { desc?: string; amount?: number }[] | null
+  my_hours: number | string | null
+  my_rate: number | string | null
+  helpers: { name?: string; mode?: string; hours?: number; rate?: number; flat?: number }[] | null
+}
+
+// Monthly fixed costs (insurance, tools, vehicle) + how own labor is treated.
+export type OverheadRow = {
+  items: { label?: string; amount?: number }[] | null
+  own_labor_as_cost: boolean | null
+}
+
 export type MonthProfit = {
   key: string          // "2026-07"
   label: string        // "Jul"
@@ -19,6 +34,8 @@ export type MonthProfit = {
   revenue: number      // sum of paid invoices
   invoiceCount: number
   pending: number      // pending + overdue total
+  cost: number         // captured cost of paid invoices that month
+  net: number          // revenue − cost − monthly overhead (0 when no revenue)
 }
 
 export type ProfitSummary = {
@@ -28,6 +45,13 @@ export type ProfitSummary = {
   pendingReceivable: number
   totalCollected: number
   months: MonthProfit[]
+  // Real net profit (revenue − materials/helpers − own labor if set as salary − overhead)
+  netThisMonth: number
+  netYtd: number
+  overheadMonthly: number
+  ownLaborAsCost: boolean
+  paidTotal: number      // # of paid invoices
+  paidWithCost: number   // # of paid invoices that have a cost captured
 }
 
 export type TicketRow = {
@@ -126,10 +150,37 @@ export function topProperties(tickets: TicketRow[], limit = 5): PropertyRank[] {
     .slice(0, limit)
 }
 
-export function profitByMonth(invoices: InvoiceRow[], months = 12, now = new Date()): ProfitSummary {
+function helperCost(h: { mode?: string; hours?: number; rate?: number; flat?: number }): number {
+  return h.mode === 'flat' ? Number(h.flat || 0) : Number(h.hours || 0) * Number(h.rate || 0)
+}
+
+export function profitByMonth(
+  invoices: InvoiceRow[],
+  costs: JobCostRow[] = [],
+  overhead: OverheadRow | null = null,
+  months = 12,
+  now = new Date(),
+): ProfitSummary {
+  const overheadMonthly = (overhead?.items || []).reduce((s, i) => s + Number(i.amount || 0), 0)
+  const ownLaborAsCost = !!overhead?.own_labor_as_cost
+
+  // Captured cost per invoice (materials + helpers, plus own labor only when it's set as a salary).
+  const costByInvoice = new Map<string, JobCostRow>()
+  for (const c of costs) if (c.invoice_id) costByInvoice.set(c.invoice_id, c)
+  const costOf = (c: JobCostRow | undefined): number | null => {
+    if (!c) return null
+    const mat = (c.materials || []).reduce((s, m) => s + Number(m.amount || 0), 0)
+    const help = (c.helpers || []).reduce((s, h) => s + helperCost(h), 0)
+    const labor = Number(c.my_hours || 0) * Number(c.my_rate || 0)
+    return mat + help + (ownLaborAsCost ? labor : 0)
+  }
+
   const revenueByMonth = new Map<string, number>()
   const countByMonth = new Map<string, number>()
   const pendingByMonth = new Map<string, number>()
+  const costByMonth = new Map<string, number>()
+  let paidTotal = 0
+  let paidWithCost = 0
 
   for (const inv of invoices) {
     const dateStr = inv.invoice_date || inv.created_at
@@ -141,6 +192,12 @@ export function profitByMonth(invoices: InvoiceRow[], months = 12, now = new Dat
     if (inv.payment_status === 'paid') {
       revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + amount)
       countByMonth.set(key, (countByMonth.get(key) || 0) + 1)
+      paidTotal += 1
+      const c = costOf(costByInvoice.get(inv.id))
+      if (c != null) {
+        costByMonth.set(key, (costByMonth.get(key) || 0) + c)
+        paidWithCost += 1
+      }
     } else if (inv.payment_status === 'pending' || inv.payment_status === 'overdue') {
       pendingByMonth.set(key, (pendingByMonth.get(key) || 0) + amount)
     }
@@ -150,13 +207,19 @@ export function profitByMonth(invoices: InvoiceRow[], months = 12, now = new Dat
   for (let i = months - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const revenue = revenueByMonth.get(key) || 0
+    const cost = costByMonth.get(key) || 0
     out.push({
       key,
       label: d.toLocaleDateString('en-US', { month: 'short' }),
       fullLabel: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      revenue: revenueByMonth.get(key) || 0,
+      revenue,
       invoiceCount: countByMonth.get(key) || 0,
       pending: pendingByMonth.get(key) || 0,
+      cost,
+      // Overhead is only charged to months that actually had work, so empty
+      // months don't show a misleading negative.
+      net: revenue > 0 ? revenue - cost - overheadMonthly : 0,
     })
   }
 
@@ -180,7 +243,26 @@ export function profitByMonth(invoices: InvoiceRow[], months = 12, now = new Dat
   const avgMonthly = activeMonths.length > 0 ? totalCollected / activeMonths.length : 0
   const bestMonth = activeMonths.length > 0 ? activeMonths.reduce((a, b) => (b.revenue > a.revenue ? b : a)) : null
 
-  return { ytdRevenue, bestMonth, avgMonthly, pendingReceivable, totalCollected, months: out }
+  const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const netThisMonth = out.find((m) => m.key === thisMonthKey)?.net || 0
+  const netYtd = out
+    .filter((m) => m.key.startsWith(String(currentYear)))
+    .reduce((s, m) => s + m.net, 0)
+
+  return {
+    ytdRevenue,
+    bestMonth,
+    avgMonthly,
+    pendingReceivable,
+    totalCollected,
+    months: out,
+    netThisMonth,
+    netYtd,
+    overheadMonthly,
+    ownLaborAsCost,
+    paidTotal,
+    paidWithCost,
+  }
 }
 
 export function recentTickets(tickets: TicketRow[], limit = 6): RecentTicket[] {

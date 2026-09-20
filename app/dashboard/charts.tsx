@@ -201,8 +201,22 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
 
-  const { months, ytdRevenue, bestMonth, avgMonthly, pendingReceivable, totalCollected } = summary
+  const {
+    months, ytdRevenue, bestMonth, avgMonthly, pendingReceivable, totalCollected,
+    netThisMonth, netYtd, overheadMonthly, ownLaborAsCost, paidTotal, paidWithCost,
+  } = summary
   const max = Math.max(...months.map((m) => m.revenue), 1)
+
+  const currentMonth = months[months.length - 1]
+  const netColor = netThisMonth >= 0 ? '#2f9e44' : '#c0392b'
+  const netDetail = currentMonth && currentMonth.revenue > 0
+    ? `${fmtUsd(currentMonth.revenue)} collected − ${fmtUsd(currentMonth.cost)} ${ownLaborAsCost ? 'costs (incl. your salary)' : 'materials + helpers'} − ${fmtUsd(overheadMonthly)} fixed`
+    : 'No paid jobs this month'
+  const coverageNote = paidTotal > 0
+    ? (paidWithCost >= paidTotal
+        ? `Cost captured on all ${paidTotal} paid invoices ✓`
+        : `Cost captured on ${paidWithCost} of ${paidTotal} paid invoices — capture the rest in the invoice app for an exact net`)
+    : 'Capture invoice costs in the invoice app to see your net profit.'
 
   const svgW = 580
   const svgH = 160
@@ -214,6 +228,46 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* Real net-profit band (revenue − materials/helpers − overhead) */}
+      <div
+        className="kpi-fade"
+        style={{
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, rgba(47,158,68,0.07), rgba(74,32,128,0.05))',
+          boxShadow: 'var(--shadow)',
+          padding: '18px 20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '16px 40px',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ minWidth: '240px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            {ownLaborAsCost ? 'Net profit — this month' : 'Stays in the business — this month'}
+          </span>
+          <div style={{ fontSize: '34px', fontWeight: 800, lineHeight: 1.1, color: netColor, marginTop: '4px' }}>
+            {fmtUsd(netThisMonth)}
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{netDetail}</span>
+        </div>
+        <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+          <div>
+            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Net (year)</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{fmtUsd(netYtd)}</div>
+          </div>
+          <div>
+            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Fixed costs / mo</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{fmtUsd(overheadMonthly)}</div>
+          </div>
+        </div>
+        <div style={{ flexBasis: '100%', borderTop: '1px dashed var(--purple-soft)', paddingTop: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+          {coverageNote}
+        </div>
+      </div>
 
       {/* KPI strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px' }}>

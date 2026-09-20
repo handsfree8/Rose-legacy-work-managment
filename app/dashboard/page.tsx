@@ -7,13 +7,15 @@ import {
   profitByMonth,
   type TicketRow,
   type InvoiceRow,
+  type JobCostRow,
+  type OverheadRow,
 } from '@/lib/kpis'
 import { StatusDonut, TicketBars, TopProperties, RecentTickets, ProfitSection } from './charts'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const [ticketsResult, invoicesResult] = await Promise.all([
+  const [ticketsResult, invoicesResult, costsResult, overheadResult] = await Promise.all([
     supabase
       .from('tickets')
       .select('id, title, status, created_at, unit_number, property_id, properties(name)')
@@ -24,10 +26,21 @@ export default async function DashboardPage() {
       .select('id, total, payment_status, invoice_date, created_at, ticket_id, payment_method')
       .order('invoice_date', { ascending: false })
       .limit(2000),
+    supabase
+      .from('job_costs')
+      .select('invoice_id, materials, my_hours, my_rate, helpers')
+      .limit(2000),
+    supabase
+      .from('overhead_settings')
+      .select('items, own_labor_as_cost')
+      .order('effective_from', { ascending: false })
+      .limit(1),
   ])
 
   const tickets = (ticketsResult.data || []) as TicketRow[]
   const invoices = (invoicesResult.data || []) as InvoiceRow[]
+  const costs = (costsResult.data || []) as JobCostRow[]
+  const overhead = (overheadResult.data?.[0] || null) as OverheadRow | null
 
   const slices = statusBreakdown(tickets)
   const months = ticketsByMonth(tickets)
@@ -62,7 +75,7 @@ export default async function DashboardPage() {
             {/* ── Revenue / Profit section ── */}
             <div style={{ marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Revenue</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Revenue &amp; Net Profit</span>
                 <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
               </div>
               <ProfitSection summary={profitSummary} />
