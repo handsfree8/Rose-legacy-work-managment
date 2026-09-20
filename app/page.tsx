@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import ProfitSummary from './components/ProfitSummary'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +23,10 @@ export default async function Home() {
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        
+
+        {/* BUSINESS PROFIT SUMMARY (reads shared invoice/cost data) */}
+        <ProfitSummary />
+
         {/* HEADER */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <p
