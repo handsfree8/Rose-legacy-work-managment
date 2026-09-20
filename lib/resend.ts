@@ -1,7 +1,5 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export type ReminderPayload = {
   tenantName: string
   tenantEmail: string
@@ -18,11 +16,12 @@ const MONTH_NAMES = [
 ]
 
 export async function sendRentReminder(p: ReminderPayload): Promise<void> {
+  const resend = new Resend(process.env.RESEND_API_KEY)
   const monthName = MONTH_NAMES[p.month - 1]
   const formatted = p.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
   await resend.emails.send({
-    from: 'Rose Legacy Home Solutions <onboarding@resend.dev>',
+    from: 'Rose Legacy Home Solutions <no-reply@roselegacyhs.com>',
     to: p.tenantEmail,
     subject: `Rent reminder: ${formatted} due ${monthName} ${p.dueDay}`,
     html: `
@@ -31,7 +30,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f8f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
-    <div style="background:linear-gradient(135deg,#1a0838,#4a2080);padding:28px 28px 24px;">
+    <div style="background:#2d0e6e;padding:28px 28px 24px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px;">Rose Legacy Home Solutions · Rent Reminder</div>
       <div style="font-size:22px;font-weight:800;color:#fff;">Your rent is due in 3 days</div>
     </div>
@@ -50,7 +49,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
         Please deliver your check to your property manager before the due date.
         Once recorded, you can see the updated status in your portal.
       </p>
-      <a href="${p.portalUrl}" style="display:inline-block;background:linear-gradient(135deg,#6b21a8,#7c3aed);color:#fff;text-decoration:none;border-radius:10px;padding:13px 24px;font-size:14px;font-weight:700;">
+      <a href="${p.portalUrl}" style="display:inline-block;background:#6b21a8;color:#fff;text-decoration:none;border-radius:10px;padding:13px 24px;font-size:14px;font-weight:700;">
         View My Portal →
       </a>
       <p style="font-size:11px;color:#9ca3af;margin:24px 0 0;line-height:1.5;">
