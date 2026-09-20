@@ -185,6 +185,7 @@ export default async function TicketDetailPage({ params }: TicketPageProps) {
               <h1 style={{ margin: '0 0 8px 0' }}>{ticket.title}</h1>
               <p style={{ margin: 0, color: 'var(--text-muted)' }}>
                 Address: {ticket.reported_address || 'N/A'}
+                {ticket.unit_number ? ` · Unit ${ticket.unit_number}` : ''}
               </p>
             </div>
 
