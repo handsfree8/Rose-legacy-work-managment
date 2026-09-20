@@ -7,8 +7,12 @@ type Phase = 'animating' | 'choice' | 'resident-input' | 'done'
 
 export default function OpeningScreen() {
   const [phase, setPhase] = useState<Phase | null>(() => {
+    if (typeof window === 'undefined') return null
     try {
-      if (typeof window !== 'undefined' && sessionStorage.getItem('rl-opening-shown')) return 'done'
+      if (sessionStorage.getItem('rl-opening-shown')) return 'done'
+      // On any route other than root the user is authenticated — never block them
+      const p = window.location.pathname
+      if (p !== '/' && !p.startsWith('/landlord') && !p.startsWith('/tenant') && p !== '/login') return 'done'
     } catch {}
     return null
   })
