@@ -214,9 +214,9 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
     : 'No paid jobs this month'
   const coverageNote = paidTotal > 0
     ? (paidWithCost >= paidTotal
-        ? `Cost captured on all ${paidTotal} paid invoices ✓`
-        : `Cost captured on ${paidWithCost} of ${paidTotal} paid invoices — capture the rest in the invoice app for an exact net`)
-    : 'Capture invoice costs in the invoice app to see your net profit.'
+        ? `✓ Cost captured on all ${paidTotal} paid invoices — net profit is exact`
+        : `⚠ Cost captured on ${paidWithCost} of ${paidTotal} paid invoices — open the invoice app to capture the rest and get an exact net`)
+    : '📋 No costs captured yet — open the invoice app, select a paid invoice, and tap "Job Cost & Profit" to start tracking your real margins.'
 
   const svgW = 580
   const svgH = 160
@@ -235,7 +235,7 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
         style={{
           border: '1px solid var(--border)',
           borderRadius: '16px',
-          background: 'linear-gradient(135deg, rgba(47,158,68,0.07), rgba(74,32,128,0.05))',
+          background: 'var(--card)',
           boxShadow: 'var(--shadow)',
           padding: '18px 20px',
           display: 'flex',
@@ -287,7 +287,7 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
       {/* Bar chart */}
       <div style={{ ...cardStyle, gridColumn: '1 / -1' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-          <span style={labelStyle}>Monthly revenue — last 12 months</span>
+          <span style={labelStyle}>Monthly revenue &amp; net profit — last 12 months</span>
           {bestMonth && (
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
               Peak: <strong style={{ color: '#2f9e44' }}>{fmtUsd(bestMonth.revenue)}</strong> in {bestMonth.fullLabel}
@@ -318,6 +318,8 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
             {months.map((m, i) => {
               const h = m.revenue > 0 ? Math.max((m.revenue / max) * (svgH - 10), 4) : 0
               const ph = m.pending > 0 ? Math.max((m.pending / max) * (svgH - 10), 3) : 0
+              // Net profit line — only when cost is captured for this month
+              const netH = m.cost > 0 && m.net > 0 ? Math.max((m.net / max) * (svgH - 10), 2) : 0
               const x = i * (barW + gap)
               const isHovered = hoveredIdx === i
               const isCurrent = i === months.length - 1
@@ -349,6 +351,18 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
                       rx={4}
                       fill={isCurrent ? '#2f9e44' : isHovered ? '#6b35b8' : 'var(--purple-mid)'}
                       opacity={h > 0 ? 1 : 0}
+                    />
+                  )}
+                  {/* Net profit overlay bar (green, narrower, on top of revenue bar) */}
+                  {netH > 0 && (
+                    <rect
+                      x={x + barW * 0.2}
+                      y={svgH - netH}
+                      width={barW * 0.6}
+                      height={netH}
+                      rx={3}
+                      fill="#2f9e44"
+                      opacity={0.85}
                     />
                   )}
                   {/* Empty state bar */}
@@ -392,6 +406,8 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
               }}>
                 <div style={{ fontWeight: 800, fontSize: '15px', marginBottom: '4px' }}>{m.fullLabel}</div>
                 <div>💰 Collected: <strong style={{ color: '#51cf66' }}>{fmtUsd(m.revenue)}</strong></div>
+                {m.cost > 0 && <div>🔧 Costs: <strong style={{ color: '#ff8787' }}>{fmtUsd(m.cost)}</strong></div>}
+                {m.net > 0 && <div>📈 Net: <strong style={{ color: '#2f9e44' }}>{fmtUsd(m.net)}</strong></div>}
                 {m.pending > 0 && <div>⏳ Pending: <strong style={{ color: '#fcc419' }}>{fmtUsd(m.pending)}</strong></div>}
                 <div style={{ color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{m.invoiceCount} invoice{m.invoiceCount !== 1 ? 's' : ''} paid</div>
               </div>
@@ -404,6 +420,10 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--purple-mid)', display: 'inline-block' }} />
             Collected
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#2f9e44', display: 'inline-block' }} />
+            Net profit
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#f59f00', opacity: 0.5, display: 'inline-block' }} />
