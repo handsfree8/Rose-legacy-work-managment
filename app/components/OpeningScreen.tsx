@@ -52,16 +52,24 @@ export default function OpeningScreen() {
   }
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem('rl-opening-shown')) {
-        setPhase('done')
-      } else {
+    // On any authenticated route (not root), never show the overlay
+    const p = window.location.pathname
+    const isAuth = p !== '/' && !p.startsWith('/landlord') && !p.startsWith('/tenant') && p !== '/login'
+    if (isAuth) {
+      try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
+      setPhase('done')
+    } else {
+      try {
+        if (sessionStorage.getItem('rl-opening-shown')) {
+          setPhase('done')
+        } else {
+          setPhase('animating')
+          fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
+        }
+      } catch {
         setPhase('animating')
         fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
       }
-    } catch {
-      setPhase('animating')
-      fallbackRef.current = setTimeout(() => setPhase('choice'), 4000)
     }
 
     // Track inactivity
