@@ -277,6 +277,11 @@ export default function TenantMessagesPanel({
                     }}>{m.body}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, paddingInline: 4, textAlign: m.sender === 'manager' ? 'right' : 'left' }}>
                       {formatTime(m.created_at)}
+                      {m.sender === 'manager' && (
+                        <span style={{ marginLeft: 6, color: m.read_at ? '#22c55e' : 'var(--text-muted)' }}>
+                          {m.read_at ? `✓✓ Visto ${formatTime(m.read_at)}` : '✓ Enviado'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
