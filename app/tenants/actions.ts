@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin as supabase } from '@/lib/supabase/admin'
+import { Resend } from 'resend'
 
 export type PaymentRow = {
   id: string
@@ -58,10 +59,9 @@ export async function replyToTenant(formData: FormData) {
   if (!tenant_id || !body) throw new Error('Missing fields.')
   if (body.length > 4000) throw new Error('Message too long.')
 
-  // Verify tenant exists and is active
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id')
+    .select('id, name, email, unit, tenant_token')
     .eq('id', tenant_id)
     .eq('active', true)
     .maybeSingle()
@@ -75,6 +75,41 @@ export async function replyToTenant(formData: FormData) {
   })
 
   if (error) throw new Error(error.message)
+
+  // Email the tenant if they have an address on file
+  if (tenant.email) {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/${tenant.tenant_token}`
+    resend.emails.send({
+      from: 'Rose Legacy Home Solutions <no-reply@roselegacyhs.com>',
+      to: tenant.email,
+      subject: `New message from your property manager`,
+      html: `
+<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;background:#f5f3ff;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+      <tr>
+        <td style="background:#2d0e6e;border-radius:12px 12px 0 0;padding:20px 24px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;margin-bottom:6px;">Rose Legacy Home Solutions</div>
+          <div style="font-size:18px;font-weight:800;color:#ffffff;">You have a new message</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#ffffff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
+          <p style="margin:0 0 12px;font-size:14px;color:#374151;">Hi <strong>${tenant.name.split(' ')[0]}</strong>,</p>
+          ${tenant.unit ? `<p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Unit: ${tenant.unit}</p>` : ''}
+          <div style="background:#f3eeff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;font-size:14px;color:#111827;line-height:1.6;margin-bottom:20px;">${body}</div>
+          <a href="${portalUrl}" style="display:inline-block;background:#6b21a8;color:#ffffff;text-decoration:none;border-radius:8px;padding:11px 20px;font-size:13px;font-weight:700;">
+            View in My Portal &rarr;
+          </a>
+          <p style="font-size:11px;color:#9ca3af;margin:20px 0 0;">Rose Legacy Home Solutions · Do not reply to this email.</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>`,
+    }).catch(() => {})
+  }
 
   revalidatePath('/tenants')
 }
