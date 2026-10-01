@@ -13,9 +13,19 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
   const today = now.getDate()
+
+  // Determine which billing month we're reminding for:
+  // If today is within 3 days BEFORE the due day of next month, remind for next month.
+  // Otherwise remind for current month.
+  const currentMonth = now.getMonth() + 1
+  const currentYear = now.getFullYear()
+
+  // We'll decide the target period per-tenant based on their due_day.
+  // Build both current and next month references upfront.
+  const nextMonthDate = new Date(currentYear, now.getMonth() + 1, 1)
+  const nextMonth = nextMonthDate.getMonth() + 1
+  const nextYear = nextMonthDate.getFullYear()
 
   const { data: tenants, error: tenantsError } = await supabaseAdmin
     .from('tenants')
@@ -30,34 +40,55 @@ export async function GET(req: NextRequest) {
 
   const tenantIds = (tenants ?? []).map((t) => t.id)
 
-  const { data: paid } = await supabaseAdmin
+  // Fetch paid records for both current and next month to avoid double-reminders
+  const { data: paidRecords } = await supabaseAdmin
     .from('rent_payments')
-    .select('tenant_id')
+    .select('tenant_id,period_year,period_month')
     .in('tenant_id', tenantIds)
-    .eq('period_year', year)
-    .eq('period_month', month)
+    .or(
+      `and(period_year.eq.${currentYear},period_month.eq.${currentMonth}),` +
+      `and(period_year.eq.${nextYear},period_month.eq.${nextMonth})`
+    )
 
-  const paidIds = new Set((paid ?? []).map((p) => p.tenant_id))
-
-  const toRemind = (tenants ?? []).filter(
-    (t) => !paidIds.has(t.id) && today >= t.rent_due_day - 3
+  const paidSet = new Set(
+    (paidRecords ?? []).map((p) => `${p.tenant_id}-${p.period_year}-${p.period_month}`)
   )
+
+  // For each tenant, determine whether to remind for current or next month.
+  // Send if: today is within 3 days before the due date (including due date itself)
+  // and the target period is not yet paid.
+  type ReminderTarget = { tenant: typeof tenants[0]; year: number; month: number }
+  const toRemind: ReminderTarget[] = []
+
+  for (const t of tenants ?? []) {
+    const dueDay = t.rent_due_day
+    // Days remaining in current month + dueDay = days until next billing cycle's due date
+    const daysInCurrentMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate()
+    const daysUntilNextDue = (daysInCurrentMonth - today) + dueDay
+
+    if (daysUntilNextDue <= 3 && !paidSet.has(`${t.id}-${nextYear}-${nextMonth}`)) {
+      // Due date falls in next month and we're within 3 days of it
+      toRemind.push({ tenant: t, year: nextYear, month: nextMonth })
+    } else if (today >= dueDay - 3 && today <= dueDay && !paidSet.has(`${t.id}-${currentYear}-${currentMonth}`)) {
+      // Due date is within current month and we're within 3 days of it
+      toRemind.push({ tenant: t, year: currentYear, month: currentMonth })
+    }
+  }
 
   let sent = 0
   let skipped = 0
 
-  for (const t of toRemind) {
+  for (const { tenant: t, year: remindYear, month: remindMonth } of toRemind) {
     try {
       const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/${t.tenant_token}`
-      const property = Array.isArray(t.properties) ? t.properties[0] : t.properties
 
       await sendRentReminder({
         tenantName: t.name,
         tenantEmail: t.email,
         amount: t.rent_amount,
         dueDay: t.rent_due_day,
-        month,
-        year,
+        month: remindMonth,
+        year: remindYear,
         portalUrl,
       })
 
