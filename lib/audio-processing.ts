@@ -1,4 +1,5 @@
 import { getOpenAI } from './openai'
+import { getAnthropic } from './anthropic'
 
 export type MaintenanceAnalysis = {
   title: string
@@ -92,12 +93,16 @@ Transcript:
 """${transcript}"""
 `
 
-  const response = await getOpenAI().responses.create({
-    model: 'gpt-4.1-mini',
-    input: prompt,
+  const response = await getAnthropic().messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
   })
 
-  const rawText = response.output_text || ''
+  const rawText = response.content
+    .filter((block) => block.type === 'text')
+    .map((block) => block.text)
+    .join('')
   const cleanedText = stripCodeFences(rawText)
 
   let parsed: MaintenanceAnalysis
