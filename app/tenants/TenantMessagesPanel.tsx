@@ -23,6 +23,7 @@ export default function TenantMessagesPanel({
   hasUnread,
   messages: initialMessages,
   tenantEmail,
+  compact = false,
 }: {
   tenantId: string
   tenantToken: string
@@ -30,7 +31,8 @@ export default function TenantMessagesPanel({
   hasUnread: boolean
   messages: Message[]
   tenantEmail: string | null
-  portalUrl: string
+  portalUrl?: string
+  compact?: boolean
 }) {
   const [open,     setOpen]     = useState(false)
   const [messages, setMessages] = useState(initialMessages)

@@ -22,6 +22,9 @@ export type TenantSummaryRow = {
   rent_due_day: number
   email: string | null
   property_address: string | null
+  property_name: string | null
+  lease_end: string | null
+  tenant_token: string
   payment: PaymentRow | null
 }
 
@@ -207,7 +210,7 @@ export async function getCurrentMonthSummary(): Promise<TenantSummaryRow[]> {
 
   const { data: tenants } = await supabase
     .from('tenants')
-    .select('id,name,unit,rent_amount,rent_due_day,email,properties(address)')
+    .select('id,name,unit,rent_amount,rent_due_day,email,lease_end,tenant_token,properties(name,address)')
     .eq('active', true)
     .order('name')
 
@@ -232,6 +235,9 @@ export async function getCurrentMonthSummary(): Promise<TenantSummaryRow[]> {
       rent_due_day: t.rent_due_day,
       email: t.email,
       property_address: prop?.address ?? null,
+      property_name: (prop as {name?: string} | null)?.name ?? null,
+      lease_end: (t as {lease_end?: string | null}).lease_end ?? null,
+      tenant_token: (t as {tenant_token: string}).tenant_token,
       payment: p ? { ...p, amount: Number(p.amount) } : null,
     }
   })
