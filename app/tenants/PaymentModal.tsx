@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { recordPayment } from './actions'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -28,6 +29,7 @@ function buildPeriodOptions() {
 
 export default function PaymentModal({ tenant, onClose }: Props) {
   const now = new Date()
+  const router = useRouter()
   const [method,  setMethod]  = useState('check')
   const [error,   setError]   = useState('')
   const [pending, start]      = useTransition()
@@ -43,7 +45,7 @@ export default function PaymentModal({ tenant, onClose }: Props) {
     fd.set('method', method)
     start(async () => {
       const res = await recordPayment(fd)
-      if (res.ok) { onClose() }
+      if (res.ok) { router.refresh(); onClose() }
       else { setError(res.error) }
     })
   }
