@@ -5,6 +5,7 @@ export type ReminderPayload = {
   tenantEmail: string
   amount: number
   dueDay: number
+  daysUntil: number
   month: number   // 1-12
   year: number
   portalUrl: string
@@ -32,7 +33,7 @@ export async function sendRentReminder(p: ReminderPayload): Promise<void> {
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
     <div style="background:#2d0e6e;padding:28px 28px 24px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px;">Rose Legacy Home Solutions · Rent Reminder</div>
-      <div style="font-size:22px;font-weight:800;color:#fff;">Your rent is due in 3 days</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;">Your rent is due in ${p.daysUntil} ${p.daysUntil === 1 ? 'day' : 'days'}</div>
     </div>
     <div style="padding:28px;">
       <p style="font-size:15px;color:#111827;margin:0 0 18px;">Hi <strong>${p.tenantName.split(' ')[0]}</strong>,</p>

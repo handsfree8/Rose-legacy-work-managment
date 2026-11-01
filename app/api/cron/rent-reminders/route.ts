@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
   // For each tenant, determine whether to remind for current or next month.
   // Send if: today is within 3 days before the due date (including due date itself)
   // and the target period is not yet paid.
-  type ReminderTarget = { tenant: typeof tenants[0]; year: number; month: number }
+  type ReminderTarget = { tenant: typeof tenants[0]; year: number; month: number; daysUntil: number }
   const toRemind: ReminderTarget[] = []
 
   for (const t of tenants ?? []) {
@@ -66,19 +66,17 @@ export async function GET(req: NextRequest) {
     const daysInCurrentMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate()
     const daysUntilNextDue = (daysInCurrentMonth - today) + dueDay
 
-    if (daysUntilNextDue <= 3 && !paidSet.has(`${t.id}-${nextYear}-${nextMonth}`)) {
-      // Due date falls in next month and we're within 3 days of it
-      toRemind.push({ tenant: t, year: nextYear, month: nextMonth })
-    } else if (today >= dueDay - 3 && today <= dueDay && !paidSet.has(`${t.id}-${currentYear}-${currentMonth}`)) {
-      // Due date is within current month and we're within 3 days of it
-      toRemind.push({ tenant: t, year: currentYear, month: currentMonth })
+    if (daysUntilNextDue === 3 && !paidSet.has(`${t.id}-${nextYear}-${nextMonth}`)) {
+      toRemind.push({ tenant: t, year: nextYear, month: nextMonth, daysUntil: 3 })
+    } else if (today === dueDay - 3 && !paidSet.has(`${t.id}-${currentYear}-${currentMonth}`)) {
+      toRemind.push({ tenant: t, year: currentYear, month: currentMonth, daysUntil: 3 })
     }
   }
 
   let sent = 0
   let skipped = 0
 
-  for (const { tenant: t, year: remindYear, month: remindMonth } of toRemind) {
+  for (const { tenant: t, year: remindYear, month: remindMonth, daysUntil } of toRemind) {
     try {
       const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/${t.tenant_token}`
 
@@ -87,6 +85,7 @@ export async function GET(req: NextRequest) {
         tenantEmail: t.email,
         amount: t.rent_amount,
         dueDay: t.rent_due_day,
+        daysUntil,
         month: remindMonth,
         year: remindYear,
         portalUrl,
