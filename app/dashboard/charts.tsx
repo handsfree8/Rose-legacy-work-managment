@@ -520,13 +520,15 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
   )
 }
 
-export function RecentTickets({ rows, invoiceByTicket }: { rows: RecentTicket[]; invoiceByTicket?: Map<string, { total: number | string | null; payment_status: string | null }> }) {
+export function RecentTickets({ rows, invoiceByTicket, invoiceAppUrl }: { rows: RecentTicket[]; invoiceByTicket?: Map<string, { total: number | string | null; payment_status: string | null }>; invoiceAppUrl?: string }) {
   const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
   return (
     <div style={cardStyle} className="kpi-card-lift">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={labelStyle}>Recent ticket invoices</span>
-        <a href="/invoices" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--purple)', textDecoration: 'none' }}>View All →</a>
+        {invoiceAppUrl && (
+          <a href={invoiceAppUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--purple)', textDecoration: 'none' }}>View All ↗</a>
+        )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '8px' }}>
         {rows.length === 0 ? (

@@ -10,7 +10,7 @@ import {
   type JobCostRow,
   type OverheadRow,
 } from '@/lib/kpis'
-import { StatusDonut, TicketBars, TopProperties, RecentTickets, ProfitSection, FulfillmentHealth } from './charts'
+import { TicketBars, TopProperties, RecentTickets, ProfitSection, FulfillmentHealth } from './charts'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,12 +88,16 @@ export default async function DashboardPage() {
                 </span>
               </div>
             </div>
-            <a
-              href="/invoices"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '9px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--text)', textDecoration: 'none', boxShadow: 'var(--shadow)', whiteSpace: 'nowrap' }}
-            >
-              ↗ Invoices
-            </a>
+            {process.env.NEXT_PUBLIC_INVOICE_APP_URL && (
+              <a
+                href={process.env.NEXT_PUBLIC_INVOICE_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '9px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--text)', textDecoration: 'none', boxShadow: 'var(--shadow)', whiteSpace: 'nowrap' }}
+              >
+                ↗ Invoices
+              </a>
+            )}
           </div>
         </div>
 
@@ -116,7 +120,7 @@ export default async function DashboardPage() {
                 <TicketBars months={months} title="Tickets — last 6 months" />
                 <FulfillmentHealth slices={slices} months={months} />
                 <TopProperties rows={props} />
-                <RecentTickets rows={recent} invoiceByTicket={invoiceByTicket} />
+                <RecentTickets rows={recent} invoiceByTicket={invoiceByTicket} invoiceAppUrl={process.env.NEXT_PUBLIC_INVOICE_APP_URL} />
               </div>
             </div>
           </>
