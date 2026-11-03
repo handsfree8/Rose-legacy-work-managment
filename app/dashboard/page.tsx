@@ -10,7 +10,7 @@ import {
   type JobCostRow,
   type OverheadRow,
 } from '@/lib/kpis'
-import { StatusDonut, TicketBars, TopProperties, RecentTickets, ProfitSection } from './charts'
+import { StatusDonut, TicketBars, TopProperties, RecentTickets, ProfitSection, FulfillmentHealth } from './charts'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,24 +46,55 @@ export default async function DashboardPage() {
   const months = ticketsByMonth(tickets)
   const props = topProperties(tickets)
   const recent = recentTickets(tickets)
-  const profitSummary = profitByMonth(invoices)
+  const profitSummary = profitByMonth(invoices, costs, overhead)
+
+  // Build invoice map for RecentTickets amounts
+  const invoiceByTicket = new Map<string, InvoiceRow>()
+  for (const inv of invoices) {
+    if (inv.ticket_id) invoiceByTicket.set(inv.ticket_id, inv)
+  }
 
   const fmtUsd = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 
+  const currentYear = new Date().getFullYear()
+
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px 80px' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '32px 24px 80px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+
+        {/* ── Executive header ── */}
         <div style={{ marginBottom: '28px' }}>
-          <p style={{ margin: 0, color: 'var(--purple-mid)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '12px' }}>
-            Rose Legacy Management
-          </p>
-          <h1 style={{ margin: '8px 0 6px', fontSize: '40px', lineHeight: 1.05, color: 'var(--text)', fontWeight: 700 }}>
-            Dashboard
-          </h1>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '16px' }}>
-            {tickets.length} tickets · {fmtUsd(profitSummary.totalCollected)} collected all time
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '8px' }}>
+            <span style={{ color: 'var(--purple-mid)', fontWeight: 700 }}>Rose Legacy Management</span>
+            <span>›</span>
+            <span>Financial &amp; Work Overview</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h1 style={{ margin: '0 0 6px', fontSize: '32px', lineHeight: 1.05, color: 'var(--text)', fontWeight: 800 }}>
+                Revenue &amp; Operational Dashboard
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--purple-soft)', color: 'var(--purple)', border: '1px solid var(--purple-border)', borderRadius: '20px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
+                  📅 Fiscal Year {currentYear}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  {tickets.filter(t => t.status === 'completed' || t.status === 'resolved').length} tickets resolved ·{' '}
+                  <strong style={{ color: '#2f9e44' }}>{fmtUsd(profitSummary.totalCollected)}</strong> collected all‑time
+                  {profitSummary.pendingReceivable > 0 && (
+                    <> · <strong style={{ color: '#b0851f' }}>{fmtUsd(profitSummary.pendingReceivable)}</strong> pending receivables</>
+                  )}
+                </span>
+              </div>
+            </div>
+            <a
+              href="/invoices"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '9px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--text)', textDecoration: 'none', boxShadow: 'var(--shadow)', whiteSpace: 'nowrap' }}
+            >
+              ↗ Invoices
+            </a>
+          </div>
         </div>
 
         {ticketsResult.error ? (
@@ -73,15 +104,9 @@ export default async function DashboardPage() {
         ) : (
           <>
             {/* ── Revenue / Profit section ── */}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Revenue &amp; Net Profit</span>
-                <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              </div>
-              <ProfitSection summary={profitSummary} />
-            </div>
+            <ProfitSection summary={profitSummary} />
 
-            {/* ── Ticket analytics section ── */}
+            {/* ── Work Orders + Fulfillment ── */}
             <div style={{ marginTop: '32px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Work Orders</span>
@@ -89,9 +114,9 @@ export default async function DashboardPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }} className="dashboard-grid">
                 <TicketBars months={months} title="Tickets — last 6 months" />
-                <StatusDonut slices={slices} />
+                <FulfillmentHealth slices={slices} months={months} />
                 <TopProperties rows={props} />
-                <RecentTickets rows={recent} />
+                <RecentTickets rows={recent} invoiceByTicket={invoiceByTicket} />
               </div>
             </div>
           </>

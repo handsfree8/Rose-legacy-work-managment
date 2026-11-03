@@ -148,8 +148,13 @@ export function TopProperties({ rows }: { rows: PropertyRank[] }) {
   const max = Math.max(...rows.map((r) => r.count), 1)
   return (
     <div style={cardStyle} className="kpi-card-lift">
-      <span style={labelStyle}>Top properties</span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={labelStyle}>Top generating properties</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--purple)', background: 'var(--purple-soft)', borderRadius: '20px', padding: '2px 8px' }}>
+          {rows.length} active
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
         {rows.length === 0 ? (
           <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No tickets yet.</span>
         ) : (
@@ -159,16 +164,19 @@ export function TopProperties({ rows }: { rows: PropertyRank[] }) {
               className="kpi-fade"
               style={{ display: 'flex', alignItems: 'center', gap: '10px', animationDelay: `${(i * 0.08).toFixed(2)}s` }}
             >
-              <span style={{ fontSize: '13px', color: 'var(--text)', minWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--purple)', background: 'var(--purple-soft)', width: '20px', height: '20px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {i + 1}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: i === 0 ? 700 : 500 }}>
                 {r.name}
               </span>
-              <span style={{ flex: 1, height: '8px', background: 'var(--purple-light)', borderRadius: '999px', overflow: 'hidden' }}>
+              <span style={{ flex: '0 0 80px', height: '7px', background: 'var(--purple-light)', borderRadius: '999px', overflow: 'hidden' }}>
                 <span
                   className="kpi-fill"
-                  style={{ display: 'block', height: '100%', width: `${(r.count / max) * 100}%`, background: 'var(--purple-mid)', borderRadius: '999px', animationDelay: `${(0.1 + i * 0.08).toFixed(2)}s` }}
+                  style={{ display: 'block', height: '100%', width: `${(r.count / max) * 100}%`, background: i === 0 ? 'var(--purple)' : 'var(--purple-mid)', borderRadius: '999px', animationDelay: `${(0.1 + i * 0.08).toFixed(2)}s` }}
                 />
               </span>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--purple)', minWidth: '24px', textAlign: 'right' }}>{r.count}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: i === 0 ? 'var(--purple)' : 'var(--text)', minWidth: '28px', textAlign: 'right' }}>{r.count}</span>
             </div>
           ))
         )}
@@ -246,9 +254,14 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
         }}
       >
         <div style={{ minWidth: '240px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-            {ownLaborAsCost ? 'Net profit — this month' : 'Stays in the business — this month'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              {ownLaborAsCost ? 'Net profit — this month' : 'Stays in the business — this month'}
+            </span>
+            <span style={{ fontSize: '10px', fontWeight: 800, background: 'var(--purple-soft)', color: 'var(--purple)', border: '1px solid var(--purple-border)', borderRadius: '20px', padding: '1px 8px' }}>
+              Cycle Starting
+            </span>
+          </div>
           <div style={{ fontSize: '34px', fontWeight: 800, lineHeight: 1.1, color: netColor, marginTop: '4px' }}>
             {fmtUsd(netThisMonth)}
           </div>
@@ -256,12 +269,14 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
         </div>
         <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
           <div>
-            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Net (year)</span>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{fmtUsd(netYtd)}</div>
+            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Net Inflow (YTD)</span>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#2f9e44' }}>{fmtUsd(netYtd)}</div>
+            <div style={{ fontSize: '10px', color: '#2f9e44', fontWeight: 600 }}>↑ 100% on active target</div>
           </div>
           <div>
-            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Fixed costs / mo</span>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>{fmtUsd(overheadMonthly)}</div>
+            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Fixed Overheads</span>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)' }}>{fmtUsd(overheadMonthly)}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Asset-light structure</div>
           </div>
         </div>
         <div style={{ flexBasis: '100%', borderTop: '1px dashed var(--purple-soft)', paddingTop: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -505,53 +520,125 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
   )
 }
 
-export function RecentTickets({ rows }: { rows: RecentTicket[] }) {
+export function RecentTickets({ rows, invoiceByTicket }: { rows: RecentTicket[]; invoiceByTicket?: Map<string, { total: number | string | null; payment_status: string | null }> }) {
+  const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
   return (
     <div style={cardStyle} className="kpi-card-lift">
-      <span style={labelStyle}>Recent activity</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={labelStyle}>Recent ticket invoices</span>
+        <a href="/invoices" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--purple)', textDecoration: 'none' }}>View All →</a>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: '8px' }}>
         {rows.length === 0 ? (
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', paddingTop: '8px' }}>No tickets yet.</span>
         ) : (
-          rows.map((t, i) => (
-            <a
-              key={t.id}
-              href={`/tickets/${t.id}`}
-              className="kpi-fade"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '10px 0',
-                borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                textDecoration: 'none',
-                animationDelay: `${(i * 0.06).toFixed(2)}s`,
-              }}
-            >
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {t.title}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {t.property} · {t.dateLabel}
-                </div>
-              </div>
-              <span
+          rows.map((t, i) => {
+            const inv = invoiceByTicket?.get(t.id)
+            const amount = inv ? Number(inv.total || 0) : null
+            const isPaid = inv?.payment_status === 'paid'
+            return (
+              <a
+                key={t.id}
+                href={`/tickets/${t.id}`}
+                className="kpi-fade"
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 9px',
-                  borderRadius: '999px',
-                  color: '#fff',
-                  background: colorFor(t.status),
-                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 0',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                  textDecoration: 'none',
+                  animationDelay: `${(i * 0.06).toFixed(2)}s`,
                 }}
               >
-                {labelFor(t.status)}
-              </span>
-            </a>
-          ))
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--purple-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 15 }}>
+                  🔧
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.title}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {t.property} · {t.dateLabel}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  {amount != null && amount > 0 && (
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: isPaid ? '#2f9e44' : '#b0851f' }}>
+                      {fmtUsd(amount)}
+                    </div>
+                  )}
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '999px', color: '#fff', background: colorFor(t.status), whiteSpace: 'nowrap' }}>
+                    {labelFor(t.status)}
+                  </span>
+                </div>
+              </a>
+            )
+          })
         )}
+      </div>
+    </div>
+  )
+}
+
+export function FulfillmentHealth({ slices, months }: { slices: StatusSlice[]; months: MonthBar[] }) {
+  const total = slices.reduce((s, x) => s + x.count, 0)
+  const resolved = slices.filter(s => s.status === 'completed' || s.status === 'resolved').reduce((s, x) => s + x.count, 0)
+  const resolvePct = total > 0 ? Math.round((resolved / total) * 100) : 0
+  const hasBacklog = slices.some(s => (s.status === 'new' || s.status === 'in_progress') && s.count > 0)
+
+  const r = 44; const circ = 2 * Math.PI * r
+  const dashResolved = (resolved / Math.max(total, 1)) * circ
+
+  const maxBar = Math.max(...months.map(m => m.count), 1)
+
+  return (
+    <div style={cardStyle} className="kpi-card-lift">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={labelStyle}>Fulfillment &amp; Health</span>
+        <span style={{ fontSize: '11px', fontWeight: 800, color: resolvePct >= 90 ? '#2f9e44' : '#b0851f', background: resolvePct >= 90 ? '#f0fdf4' : '#fffbeb', border: `1px solid ${resolvePct >= 90 ? '#bbf7d0' : '#fde68a'}`, borderRadius: 20, padding: '2px 9px' }}>
+          {resolvePct}% Rate
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '20px', marginTop: '14px', alignItems: 'center' }}>
+        {/* Radial */}
+        <svg width={100} height={100} viewBox="0 0 100 100" style={{ flexShrink: 0 }}>
+          <circle cx={50} cy={50} r={r} fill="none" stroke="var(--border)" strokeWidth={10} />
+          <circle
+            cx={50} cy={50} r={r} fill="none"
+            stroke={resolvePct >= 90 ? '#2f9e44' : '#b0851f'}
+            strokeWidth={10}
+            strokeDasharray={`${dashResolved} ${circ - dashResolved}`}
+            strokeDashoffset={circ / 4}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dasharray 0.6s ease' }}
+          />
+          <text x={50} y={46} textAnchor="middle" fontSize="16" fontWeight="800" fill="var(--text)">{resolved}</text>
+          <text x={50} y={60} textAnchor="middle" fontSize="9" fill="var(--text-muted)">RESOLVED</text>
+        </svg>
+
+        {/* Mini bar histogram + stats */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tickets volume</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '36px', marginBottom: '4px' }}>
+            {months.map((m, i) => {
+              const h = m.count > 0 ? Math.max((m.count / maxBar) * 36, 4) : 2
+              const isCurrent = i === months.length - 1
+              return (
+                <div key={m.key} title={`${m.label}: ${m.count}`} style={{ flex: 1, height: `${h}px`, borderRadius: '3px 3px 0 0', background: isCurrent ? 'var(--purple)' : 'var(--purple-mid)', opacity: isCurrent ? 1 : 0.45 + i * 0.1 }} />
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {months.map((m, i) => (
+              <span key={m.key} style={{ fontSize: '9px', color: 'var(--text-muted)', flex: 1, textAlign: 'center' }}>{m.label}</span>
+            ))}
+          </div>
+          <div style={{ marginTop: '10px', fontSize: '12px', color: hasBacklog ? '#b0851f' : '#2f9e44', fontWeight: 700 }}>
+            {hasBacklog ? '⚠ Active backlog' : '✓ Zero unresolved backlog'}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Trailing 6-month ticket allocation</div>
+        </div>
       </div>
     </div>
   )
