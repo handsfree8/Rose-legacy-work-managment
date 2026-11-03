@@ -48,10 +48,10 @@ export default async function DashboardPage() {
   const recent = recentTickets(tickets)
   const profitSummary = profitByMonth(invoices, costs, overhead)
 
-  // Build invoice map for RecentTickets amounts
-  const invoiceByTicket = new Map<string, InvoiceRow>()
+  // Build invoice lookup for RecentTickets amounts (plain object — must be serializable for Client Components)
+  const invoiceByTicket: Record<string, { total: number | string | null; payment_status: string | null }> = {}
   for (const inv of invoices) {
-    if (inv.ticket_id) invoiceByTicket.set(inv.ticket_id, inv)
+    if (inv.ticket_id) invoiceByTicket[inv.ticket_id] = { total: inv.total, payment_status: inv.payment_status }
   }
 
   const fmtUsd = (n: number) =>

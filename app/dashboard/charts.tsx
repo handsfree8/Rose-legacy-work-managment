@@ -520,7 +520,7 @@ export function ProfitSection({ summary }: { summary: ProfitSummary }) {
   )
 }
 
-export function RecentTickets({ rows, invoiceByTicket, invoiceAppUrl }: { rows: RecentTicket[]; invoiceByTicket?: Map<string, { total: number | string | null; payment_status: string | null }>; invoiceAppUrl?: string }) {
+export function RecentTickets({ rows, invoiceByTicket, invoiceAppUrl }: { rows: RecentTicket[]; invoiceByTicket?: Record<string, { total: number | string | null; payment_status: string | null }>; invoiceAppUrl?: string }) {
   const fmtUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
   return (
     <div style={cardStyle} className="kpi-card-lift">
@@ -535,7 +535,7 @@ export function RecentTickets({ rows, invoiceByTicket, invoiceAppUrl }: { rows: 
           <span style={{ fontSize: '13px', color: 'var(--text-muted)', paddingTop: '8px' }}>No tickets yet.</span>
         ) : (
           rows.map((t, i) => {
-            const inv = invoiceByTicket?.get(t.id)
+            const inv = invoiceByTicket?.[t.id]
             const amount = inv ? Number(inv.total || 0) : null
             const isPaid = inv?.payment_status === 'paid'
             return (
