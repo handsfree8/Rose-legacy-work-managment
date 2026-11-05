@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { markTicketCompleted, createEstimate, deleteEstimate, toggleInvoicePaymentStatus, toggleConsolidatedInvoiceStatus } from './actions'
 import TicketPhotoUpload from '@/app/components/TicketPhotoUpload'
