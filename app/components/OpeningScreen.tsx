@@ -19,7 +19,7 @@ export default function OpeningScreen() {
 
   // On any app route other than root, the user is authenticated — always hide the overlay
   useEffect(() => {
-    if (!pathname || isPortalRoute) return
+    if (!pathname) return
     if (pathname !== '/') {
       try { sessionStorage.setItem('rl-opening-shown', '1') } catch {}
       setPhase('done')
